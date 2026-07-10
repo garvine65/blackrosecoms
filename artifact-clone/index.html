@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Black Rose Consulting - Client Task Tracker</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <section class="login-screen" id="loginScreen">
+      <div class="login-watermark" aria-hidden="true"></div>
+      <div class="login-panel">
+        <header class="login-header">
+          <img src="./assets/logo.jpeg" alt="Black Rose Consulting" />
+          <div>
+            <h1>Black Rose Consultancy</h1>
+            <p>Select a profile to continue</p>
+          </div>
+        </header>
+
+        <div class="profile-grid" id="profileGrid" aria-label="Profiles"></div>
+      </div>
+    </section>
+
+    <div class="app-shell">
+      <div class="brand-watermark" aria-hidden="true"></div>
+
+      <aside class="alert-bar" id="alertBar">
+        <strong id="alertText"></strong>
+        <div class="alert-actions">
+          <button class="light-button" id="snoozeButton">Snooze 10 min</button>
+          <button class="light-button" id="dismissButton">Dismiss</button>
+        </div>
+      </aside>
+
+      <header class="masthead">
+        <div>
+          <h1>Black Rose Consultancy</h1>
+          <p>Client task &amp; deadline tracker</p>
+        </div>
+        <div class="session-info">
+          <span id="currentProfileLabel"></span>
+          <time id="todayLabel"></time>
+          <button class="outline-button compact-button" id="switchProfileButton">Switch profile</button>
+        </div>
+      </header>
+
+      <main>
+        <div class="view-toggle" id="viewToggle">
+          <button class="toggle-btn active" data-view="tasks">Tasks Board</button>
+          <button class="toggle-btn" data-view="meetings">Meetings Schedule</button>
+          <button class="toggle-btn" data-view="dashboard">Dashboard</button>
+          <button class="toggle-btn" data-view="workload">Workload</button>
+        </div>
+
+        <div class="notification-banner" id="notificationBanner" hidden>
+          <div class="notification-content">
+            <span class="notification-icon">🔔</span>
+            <span id="notificationText"></span>
+          </div>
+          <button class="primary-button compact-button" id="dismissNotificationButton">Mark as read</button>
+        </div>
+
+        <section class="toolbar" aria-label="Task actions">
+          <button class="primary-button" id="newTaskButton">+ New task</button>
+          <button class="primary-button" id="newMeetingButton" hidden>+ Schedule meeting</button>
+          <button class="outline-button" id="notifyButton">Enable notifications</button>
+          <button class="outline-button" id="exportButton" title="Export summary">📋 Export</button>
+          <span class="status-pill warning">Muted until enabled</span>
+          <span class="status-pill synced">Synced with everyone</span>
+        </section>
+
+        <nav class="tabs" id="clientTabs" aria-label="Clients"></nav>
+
+        <section class="view-heading" id="tasksHeading">
+          <h2 id="viewTitle">All clients</h2>
+          <div class="assignment-filters" id="assignmentFilters">
+            <button class="filter-btn active" data-filter="all">All tasks</button>
+            <button class="filter-btn" data-filter="to-me">Assigned to me</button>
+            <button class="filter-btn" data-filter="by-me">Assigned by me</button>
+            <button class="filter-btn" data-filter="to-others">Assigned to others</button>
+          </div>
+          <span id="openTaskCount">0 open tasks</span>
+        </section>
+
+        <section class="task-board" id="taskBoard"></section>
+
+        <div id="meetingsView" class="meetings-view" hidden>
+          <section class="view-heading">
+            <h2>Upcoming meetings</h2>
+            <button class="primary-button" id="meetingsScheduleBtn">+ Schedule meeting</button>
+            <span id="openMeetingCount">0 upcoming meetings</span>
+          </section>
+          <div class="meetings-grid" id="meetingsGrid"></div>
+        </div>
+
+        <div id="dashboardView" hidden>
+          <section class="view-heading">
+            <h2>Client Dashboard</h2>
+            <span id="dashboardSubtitle"></span>
+          </section>
+          <div id="dashboardGrid" class="dashboard-grid"></div>
+        </div>
+
+        <div id="workloadView" hidden>
+          <section class="view-heading">
+            <h2>Team Workload</h2>
+            <span id="workloadSubtitle"></span>
+          </section>
+          <div id="workloadGrid" class="workload-grid"></div>
+        </div>
+
+        <div id="exportPanel" class="export-panel" hidden>
+          <section class="view-heading">
+            <h2>📋 Export Summary</h2>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="outline-button compact-button" id="copyExportBtn">Copy to clipboard</button>
+              <button class="outline-button compact-button" id="printExportBtn">🖨 Print / PDF</button>
+              <button class="outline-button compact-button" id="closeExportBtn">✕ Close</button>
+            </div>
+          </section>
+          <pre id="exportText" class="export-text"></pre>
+        </div>
+      </main>
+    </div>
+
+    <dialog id="taskDialog">
+      <form method="dialog" id="taskForm" class="task-form">
+        <header>
+          <h2 id="dialogTitle">New task</h2>
+          <button value="cancel" class="icon-button" aria-label="Close" formnovalidate>x</button>
+        </header>
+
+        <input type="hidden" id="taskId" />
+
+        <label>
+          Client
+          <select id="taskClient" required></select>
+        </label>
+
+        <label>
+          Task
+          <input id="taskTitle" required />
+        </label>
+
+        <label>
+          Details
+          <textarea id="taskDetails" rows="4"></textarea>
+        </label>
+
+        <div class="form-grid assignment-grid">
+          <label>
+            Assigned by
+            <select id="taskAssignedBy" required></select>
+          </label>
+          <label>
+            Assigned to
+            <select id="taskAssignedTo" required></select>
+          </label>
+        </div>
+
+        <div class="form-grid">
+          <label>
+            Due date
+            <input id="taskDate" type="date" required />
+          </label>
+          <label>
+            Time
+            <input id="taskTime" type="time" required />
+          </label>
+          <label>
+            Priority
+            <select id="taskPriority">
+              <option value="normal">Normal</option>
+              <option value="urgent">🔴 Urgent</option>
+              <option value="low">🟢 Low</option>
+            </select>
+          </label>
+          <label>
+            Repeat
+            <select id="taskRepeat">
+              <option value="">None</option>
+              <option value="monthly">Monthly</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </label>
+          <label>
+            Status
+            <select id="taskStatus">
+              <option value="open">Open</option>
+              <option value="completed">Completed</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="checklistSection">
+          <label style="margin-bottom:0.4rem;display:block;font-weight:600;">Document checklist</label>
+          <div id="checklistItems"></div>
+          <div style="display:flex;gap:0.5rem;margin-top:0.4rem;">
+            <input id="checklistInput" placeholder="Add item (e.g. Bank statement)" style="flex:1;" />
+            <button type="button" id="addChecklistBtn" class="outline-button compact-button">+ Add</button>
+          </div>
+        </div>
+
+        <footer>
+          <button value="cancel" class="outline-button" formnovalidate>Cancel</button>
+          <button id="saveTaskButton" value="default" class="primary-button">Save task</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="commentsDialog">
+      <div class="task-form">
+        <header>
+          <h2>Task Notes &amp; Progress</h2>
+          <button id="closeCommentsBtn" type="button" class="icon-button" aria-label="Close">x</button>
+        </header>
+        <p id="commentsTaskTitle" style="font-weight:600;margin:0 0 0.75rem;"></p>
+        <div id="commentsList" class="comments-list"></div>
+        <div class="comments-input-row">
+          <textarea id="commentInput" rows="2" placeholder="Add a progress note..."></textarea>
+          <button id="submitCommentBtn" type="button" class="primary-button compact-button">Post</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="meetingDialog">
+      <form method="dialog" id="meetingForm" class="task-form">
+        <header>
+          <h2 id="meetingDialogTitle">Schedule meeting</h2>
+          <button value="cancel" class="icon-button" aria-label="Close" formnovalidate>x</button>
+        </header>
+
+        <input type="hidden" id="meetingId" />
+
+        <label>
+          Meeting title / Agenda
+          <input id="meetingTitle" required />
+        </label>
+
+        <label>
+          Meeting link (Google Meet / Zoom)
+          <input id="meetingLink" type="text" placeholder="https://meet.google.com/... (optional)" />
+        </label>
+
+        <label>
+          Description / Details
+          <textarea id="meetingDescription" rows="3"></textarea>
+        </label>
+
+        <div class="form-grid">
+          <label>
+            Date
+            <input id="meetingDate" type="date" required />
+          </label>
+          <label>
+            Time
+            <input id="meetingTime" type="time" required />
+          </label>
+          <label style="grid-column: span 2;">
+            Organizer
+            <select id="meetingOrganizer" required></select>
+          </label>
+        </div>
+
+        <label>
+          Participants (Invitees)
+          <div class="participants-checkbox-list" id="meetingParticipants">
+            <!-- Dynamic checkboxes will be injected here -->
+          </div>
+        </label>
+
+        <footer>
+          <button value="cancel" class="outline-button" formnovalidate>Cancel</button>
+          <button id="saveMeetingButton" value="default" class="primary-button">Save meeting</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="recurrenceDialog">
+      <form id="recurrenceForm" class="task-form">
+        <header>
+          <h2>Schedule next occurrence</h2>
+          <button id="closeRecurrenceButton" type="button" class="icon-button" aria-label="Close">x</button>
+        </header>
+
+        <input type="hidden" id="recurrenceTaskId" />
+
+        <p id="recurrenceText" style="margin: 0; line-height: 1.4; color: var(--muted);"></p>
+
+        <div class="form-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+          <label>
+            Next due date
+            <input id="recurrenceDate" type="date" required />
+          </label>
+          <label>
+            Time
+            <input id="recurrenceTime" type="time" required />
+          </label>
+        </div>
+
+        <footer>
+          <button id="cancelRecurrenceButton" type="button" class="outline-button" style="margin-right: auto;">Cancel</button>
+          <button id="skipRecurrenceButton" type="button" class="outline-button">Skip scheduling</button>
+          <button id="saveRecurrenceButton" type="submit" class="primary-button">Schedule next</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="profileDialog">
+      <form method="dialog" id="profileForm" class="task-form profile-form">
+        <header>
+          <h2>Edit profile</h2>
+          <button value="cancel" class="icon-button" aria-label="Close" formnovalidate>x</button>
+        </header>
+
+        <input type="hidden" id="profileId" />
+
+        <label>
+          Username
+          <input id="profileName" required />
+        </label>
+
+        <label>
+          Details
+          <textarea id="profileDetails" rows="3"></textarea>
+        </label>
+
+        <label>
+          Profile image
+          <input id="profileImage" type="file" accept="image/*" />
+        </label>
+
+        <footer>
+          <button value="cancel" class="outline-button" formnovalidate>Cancel</button>
+          <button id="saveProfileButton" value="default" class="primary-button">Save profile</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
