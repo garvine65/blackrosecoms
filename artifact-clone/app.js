@@ -17,6 +17,29 @@ let profiles = loadProfiles();
 let activeProfileId = localStorage.getItem(sessionStorageKey) || "";
 let assignmentFilter = "all";
 let activeView = "tasks";
+
+const passwordStorageKey = "blackrose-client-passwords";
+const defaultPasswords = [
+  { id: "pass-1", category: "kra", client: "AMM Law", username: "P051234567X", password: "Password123" },
+  { id: "pass-2", category: "gmail", client: "BRC Consultancy", username: "info@blackrose.co.ke", password: "SecretPassword" }
+];
+
+let passwords = loadPasswords();
+let activePasswordCategory = "kra";
+
+function loadPasswords() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(passwordStorageKey) || "[]");
+    return saved.length ? saved : defaultPasswords;
+  } catch {
+    return defaultPasswords;
+  }
+}
+
+function persistPasswords() {
+  localStorage.setItem(passwordStorageKey, JSON.stringify(passwords));
+}
+
 const meetingStorageKey = "blackrose-meetings";
 const defaultMeetings = [
   {
@@ -293,18 +316,34 @@ function render() {
   const isDash = activeView === "dashboard";
   const isWorkload = activeView === "workload";
   const isUnwind = activeView === "unwind";
+  const isPasswords = isTask && selectedClient === "Passwords";
 
   clientTabs.style.display = isTask ? "" : "none";
-  tasksHeading.style.display = isTask ? "" : "none";
-  taskBoard.style.display = isTask ? "" : "none";
-  newTaskButton.style.display = isTask ? "" : "none";
+  tasksHeading.style.display = isTask && !isPasswords ? "" : "none";
+  taskBoard.style.display = isTask && !isPasswords ? "" : "none";
+  newTaskButton.style.display = isTask && !isPasswords ? "" : "none";
+  
+  const passwordsHeading = document.querySelector("#passwordsHeading");
+  const passwordsView = document.querySelector("#passwordsView");
+  if (passwordsHeading) passwordsHeading.hidden = !isPasswords;
+  if (passwordsView) passwordsView.hidden = !isPasswords;
+
   document.querySelector("#meetingsView").hidden = !isMeeting;
   document.querySelector("#newMeetingButton").hidden = !isMeeting;
   document.querySelector("#dashboardView").hidden = !isDash;
   document.querySelector("#workloadView").hidden = !isWorkload;
   document.querySelector("#unwindView").hidden = !isUnwind;
 
-  if (isTask) { renderFilters(); renderTabs(); renderBoard(); injectStatutoryDeadlines(); }
+  if (isTask) {
+    renderFilters();
+    renderTabs();
+    if (isPasswords) {
+      renderPasswords();
+    } else {
+      renderBoard();
+      injectStatutoryDeadlines();
+    }
+  }
   if (isMeeting) renderMeetings();
   if (isDash) renderDashboard();
   if (isWorkload) renderWorkload();
@@ -410,14 +449,15 @@ function saveProfile(event) {
 }
 
 function renderTabs() {
-  clientTabs.innerHTML = clients
+  const tabList = [...clients, "Passwords"];
+  clientTabs.innerHTML = tabList
     .map((client) => {
       const active = client === selectedClient ? " active" : "";
-      const count = openTasksFor(client);
+      const count = client === "Passwords" ? 0 : openTasksFor(client);
       return `<button class="tab${active}" data-client="${client}">
         ${count ? '<span class="dot"></span>' : ""}
         <span>${client}</span>
-        <span class="count">${count}</span>
+        ${client !== "Passwords" ? `<span class="count">${count}</span>` : ""}
       </button>`;
     })
     .join("");
@@ -1643,5 +1683,139 @@ function searchTenorGifs() {
     })
     .catch(() => renderCuratedGifs()); // fallback to curated on network error
 }
+
+// ── Feature 9: Passwords Manager ──────────────────────────────────────────────
+function initClientDatalist() {
+  const datalist = document.querySelector("#clientDatalist");
+  if (datalist) {
+    const actualClients = clients.filter(c => c !== "All clients");
+    datalist.innerHTML = actualClients.map(c => `<option value="${escapeHtml(c)}">`).join("");
+  }
+}
+
+function initPasswordFilters() {
+  const filterContainer = document.querySelector("#passwordFilters");
+  if (!filterContainer) return;
+  filterContainer.querySelectorAll(".category-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      activePasswordCategory = btn.dataset.category;
+      filterContainer.querySelectorAll(".category-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.category === activePasswordCategory);
+      });
+      renderPasswords();
+    });
+  });
+}
+
+function handlePasswordInput(e) {
+  const row = e.target.closest("tr");
+  if (!row) return;
+  const id = row.dataset.id;
+  const field = e.target.dataset.field;
+  const item = passwords.find(p => p.id === id);
+  if (item) {
+    item[field] = e.target.value;
+    persistPasswords();
+  }
+}
+
+function deletePasswordRow(id) {
+  passwords = passwords.filter(p => p.id !== id);
+  persistPasswords();
+  renderPasswords();
+}
+
+function addPasswordRow() {
+  const newRow = {
+    id: createId(),
+    category: activePasswordCategory,
+    client: "",
+    username: "",
+    password: ""
+  };
+  passwords.push(newRow);
+  persistPasswords();
+  renderPasswords();
+}
+
+function renderPasswords() {
+  const container = document.querySelector("#passwordsTableBody");
+  const headerRow = document.querySelector("#passwordTableHeaderRow");
+  const tableHeader = document.querySelector("#passwordTableHeader");
+  const rowCount = document.querySelector("#passwordRowCount");
+  if (!container || !headerRow) return;
+
+  const filtered = passwords.filter(p => p.category === activePasswordCategory);
+  const categoryLabel = activePasswordCategory === "kra" ? "KRA PINs" : "Gmail";
+  tableHeader.textContent = categoryLabel;
+  rowCount.textContent = `${filtered.length} ${filtered.length === 1 ? "row" : "rows"}`;
+
+  if (activePasswordCategory === "kra") {
+    headerRow.innerHTML = `
+      <th style="width: 35%;">Client</th>
+      <th style="width: 35%;">KRA PIN</th>
+      <th style="width: 25%;">Password</th>
+      <th style="width: 5%;"></th>
+    `;
+  } else {
+    headerRow.innerHTML = `
+      <th style="width: 35%;">Client</th>
+      <th style="width: 35%;">Gmail Address</th>
+      <th style="width: 25%;">Password</th>
+      <th style="width: 5%;"></th>
+    `;
+  }
+
+  container.innerHTML = filtered.map(item => {
+    return `
+      <tr data-id="${item.id}">
+        <td>
+          <input list="clientDatalist" data-field="client" value="${escapeHtml(item.client)}" placeholder="Client name" />
+        </td>
+        <td>
+          <input type="text" data-field="username" value="${escapeHtml(item.username)}" placeholder="${activePasswordCategory === 'kra' ? 'e.g. P851234567X' : 'e.g. client@gmail.com'}" />
+        </td>
+        <td>
+          <div class="password-input-wrapper">
+            <input type="password" data-field="password" value="${escapeHtml(item.password)}" placeholder="Password" />
+            <button type="button" class="password-toggle-btn" title="Toggle visibility">👁</button>
+          </div>
+        </td>
+        <td style="text-align: right;">
+          <button type="button" class="row-delete-btn" title="Delete credential">✕</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  container.querySelectorAll("input").forEach(input => {
+    input.addEventListener("input", handlePasswordInput);
+  });
+
+  container.querySelectorAll(".password-toggle-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const input = btn.previousElementSibling;
+      if (input.type === "password") {
+        input.type = "text";
+        btn.textContent = "🙈";
+      } else {
+        input.type = "password";
+        btn.textContent = "👁";
+      }
+    });
+  });
+
+  container.querySelectorAll(".row-delete-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const id = e.target.closest("tr").dataset.id;
+      deletePasswordRow(id);
+    });
+  });
+}
+
+// Initialize passwords managers
+initClientDatalist();
+initPasswordFilters();
+document.querySelector("#addPasswordRowBtn").addEventListener("click", addPasswordRow);
 
 render();

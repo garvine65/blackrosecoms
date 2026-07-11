@@ -2063,3 +2063,185 @@ dialog::before {
   .notification-banner, .export-panel > section { display: none !important; }
   .export-text { border: none; max-height: none; font-size: 0.9rem; }
 }
+
+/* ── Passwords View Styles ─────────────────────────────── */
+
+.category-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  background: rgba(228, 222, 211, 0.4);
+  padding: 3px;
+  border-radius: 30px;
+  border: 1px solid var(--line);
+}
+
+.category-btn {
+  background: transparent;
+  border: none;
+  border-radius: 20px;
+  padding: 0.45rem 1.25rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--muted);
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.category-btn:hover {
+  color: var(--navy);
+}
+
+.category-btn.active {
+  background: var(--amber);
+  color: var(--white);
+  box-shadow: 0 2px 6px rgba(183, 122, 23, 0.2);
+}
+
+.passwords-view {
+  margin-top: 1rem;
+}
+
+.passwords-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(20, 35, 59, 0.04);
+  overflow: hidden;
+}
+
+.passwords-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+  background: rgba(228, 222, 211, 0.1);
+}
+
+.passwords-card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.row-count {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.passwords-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.passwords-table th {
+  font-size: 0.72rem;
+  font-family: "Courier New", monospace;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0.85rem 1.2rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.passwords-table td {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.passwords-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Tabular inline inputs */
+.passwords-table input {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0.6rem 0.8rem;
+  border-radius: 4px;
+  color: var(--ink);
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.passwords-table input:focus {
+  border-color: var(--amber);
+  background: var(--amber-soft);
+  outline: none;
+}
+
+/* Visibility toggle wrapper */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  padding-right: 2.2rem;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 0.4rem;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 0.3rem;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.password-toggle-btn:hover {
+  color: var(--navy);
+}
+
+/* Row delete action */
+.row-delete-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  width: 1.85rem;
+  height: 1.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  padding: 0;
+  margin-left: auto;
+}
+
+.row-delete-btn:hover {
+  color: var(--red);
+  border-color: #f5c0c0;
+  background: var(--red-soft);
+}
+
+.passwords-card-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--line);
+  background: rgba(228, 222, 211, 0.05);
+}
+
+/* Mobile responsive fallback styling for credentials card */
+@media (max-width: 768px) {
+  .passwords-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+}
+
