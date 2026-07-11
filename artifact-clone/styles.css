@@ -674,6 +674,7 @@ main {
 dialog {
   position: relative;
   width: min(680px, calc(100vw - 2rem));
+  max-height: min(90vh, 90dvh);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0;
@@ -684,6 +685,8 @@ dialog {
   color: var(--ink);
   box-shadow: 0 24px 70px rgba(20, 17, 12, 0.28);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 dialog::backdrop {
@@ -708,6 +711,9 @@ dialog::before {
   display: grid;
   gap: 1rem;
   padding: 1.25rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .task-form header,
@@ -1058,6 +1064,22 @@ dialog::before {
   }
 }
 
+@media (max-width: 480px) {
+  dialog {
+    width: calc(100vw - 1rem);
+    max-height: min(88vh, 88dvh);
+    margin: auto 0.5rem;
+  }
+
+  .task-form {
+    padding: 1rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════
    FEATURE STYLES — added features
    ═══════════════════════════════════════════════════════════ */
@@ -1124,12 +1146,14 @@ dialog::before {
 /* ── Comments Dialog ─────────────────────────────────────── */
 #commentsDialog {
   width: min(600px, 95vw);
-  max-height: 90vh;
+  max-height: min(90vh, 90dvh);
   border-radius: 0.75rem;
   border: 1px solid var(--line);
   padding: 0;
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 #commentsDialog > .task-form {
   display: flex;
