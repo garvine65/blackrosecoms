@@ -764,13 +764,28 @@ dialog::before {
   min-width: min(620px, calc(100vw - 2rem));
 }
 
+/* Scroll wrapper so the pill never causes page-level overflow */
+.view-toggle-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1.5rem;
+  /* hide scrollbar but keep scrollability */
+  scrollbar-width: none;
+}
+.view-toggle-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
 .view-toggle {
   display: inline-flex;
   background: rgba(228, 222, 211, 0.4);
   padding: 3px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  margin-bottom: 1.5rem;
+  white-space: nowrap;
+  /* remove bottom margin — now on the wrapper */
+  margin-bottom: 0;
 }
 
 .toggle-btn {
@@ -783,6 +798,8 @@ dialog::before {
   color: var(--muted);
   transition: all 0.2s ease;
   font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .toggle-btn:hover {
@@ -1064,6 +1081,12 @@ dialog::before {
 
   .participants-checkbox-list {
     grid-template-columns: 1fr;
+  }
+
+  /* tighten toggle buttons on small viewports */
+  .toggle-btn {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.88rem;
   }
 }
 
@@ -2036,7 +2059,7 @@ dialog::before {
 }
 
 @media print {
-  .alert-bar, .masthead, .tabs, .toolbar, .view-toggle,
+  .alert-bar, .masthead, .tabs, .toolbar, .view-toggle, .view-toggle-wrapper,
   .notification-banner, .export-panel > section { display: none !important; }
   .export-text { border: none; max-height: none; font-size: 0.9rem; }
 }
