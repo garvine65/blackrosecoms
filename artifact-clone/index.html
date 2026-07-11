@@ -51,6 +51,7 @@
           <button class="toggle-btn" data-view="meetings">Meetings Schedule</button>
           <button class="toggle-btn" data-view="dashboard">Dashboard</button>
           <button class="toggle-btn" data-view="workload">Workload</button>
+          <button class="toggle-btn unwind-toggle-btn" data-view="unwind">🎉 Unwind</button>
         </div>
 
         <div class="notification-banner" id="notificationBanner" hidden>
@@ -120,6 +121,97 @@
             </div>
           </section>
           <pre id="exportText" class="export-text"></pre>
+        </div>
+
+        <!-- ── UNWIND VIEW ─────────────────────────────────── -->
+        <div id="unwindView" hidden>
+          <div class="unwind-header">
+            <div class="unwind-title-block">
+              <h2 class="unwind-title">🎉 Unwind</h2>
+              <p class="unwind-subtitle">Drop the spreadsheets. This is the chill zone.</p>
+            </div>
+            <div class="unwind-quote" id="unwindQuote"></div>
+          </div>
+
+          <div class="unwind-layout">
+            <!-- LEFT: Rankings -->
+            <aside class="unwind-rankings">
+              <!-- Vibe Check -->
+              <div class="vibe-poll" id="vibePoll">
+                <div class="vibe-poll-header">⚡ Vibe Check</div>
+                <p class="vibe-poll-question">How are you holding up this week?</p>
+                <div class="vibe-options" id="vibeOptions">
+                  <button class="vibe-btn" data-vibe="thriving">🔥<span>Thriving</span></button>
+                  <button class="vibe-btn" data-vibe="grinding">😤<span>Grinding</span></button>
+                  <button class="vibe-btn" data-vibe="dead">💀<span>Send help</span></button>
+                </div>
+                <div class="vibe-results" id="vibeResults" hidden></div>
+              </div>
+
+              <!-- Goons -->
+              <div class="rank-section goons-section">
+                <div class="rank-section-header">
+                  <span class="rank-section-icon">😈</span>
+                  <div>
+                    <strong>Goons of the Week</strong>
+                    <p>Top slackers — calculated from task data</p>
+                  </div>
+                </div>
+                <div class="rank-list" id="goonsList"></div>
+              </div>
+
+              <!-- Showoffs -->
+              <div class="rank-section showoffs-section">
+                <div class="rank-section-header">
+                  <span class="rank-section-icon">🌟</span>
+                  <div>
+                    <strong>Showoffs</strong>
+                    <p>Actually doing their jobs — respect</p>
+                  </div>
+                </div>
+                <div class="rank-list" id="showoffsList"></div>
+              </div>
+            </aside>
+
+            <!-- RIGHT: Chat -->
+            <section class="unwind-chat">
+              <div class="chat-header">
+                <span class="chat-header-icon">💬</span>
+                <div>
+                  <strong>Team Chat</strong>
+                  <span class="chat-online-dot"></span>
+                  <small>6 members</small>
+                </div>
+              </div>
+
+              <div class="chat-messages" id="chatMessages"></div>
+
+              <!-- Sticker picker (hidden by default) -->
+              <div class="sticker-picker" id="stickerPicker" hidden>
+                <div class="sticker-grid" id="stickerGrid"></div>
+              </div>
+
+              <!-- GIF picker (hidden by default) -->
+              <div class="gif-picker" id="gifPicker" hidden>
+                <div class="gif-search-row">
+                  <input class="gif-search-input" id="gifSearchInput" placeholder="Search GIFs (tenor)…" />
+                  <button class="outline-button compact-button" id="gifSearchBtn">Search</button>
+                </div>
+                <div class="gif-grid" id="gifGrid"></div>
+              </div>
+
+              <div class="chat-input-bar">
+                <button class="chat-action-btn" id="stickerToggleBtn" title="Stickers &amp; Emojis">😄</button>
+                <button class="chat-action-btn" id="gifToggleBtn" title="GIFs">GIF</button>
+                <label class="chat-action-btn" title="Image (max 1 MB)" id="imageUploadLabel">
+                  🖼
+                  <input type="file" id="chatImageInput" accept="image/*" style="display:none" />
+                </label>
+                <textarea class="chat-textarea" id="chatTextarea" rows="1" placeholder="Say something… or don't 😂"></textarea>
+                <button class="chat-send-btn" id="chatSendBtn">Send</button>
+              </div>
+            </section>
+          </div>
         </div>
       </main>
     </div>

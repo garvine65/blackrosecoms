@@ -292,6 +292,7 @@ function render() {
   const isMeeting = activeView === "meetings";
   const isDash = activeView === "dashboard";
   const isWorkload = activeView === "workload";
+  const isUnwind = activeView === "unwind";
 
   clientTabs.style.display = isTask ? "" : "none";
   tasksHeading.style.display = isTask ? "" : "none";
@@ -301,11 +302,13 @@ function render() {
   document.querySelector("#newMeetingButton").hidden = !isMeeting;
   document.querySelector("#dashboardView").hidden = !isDash;
   document.querySelector("#workloadView").hidden = !isWorkload;
+  document.querySelector("#unwindView").hidden = !isUnwind;
 
   if (isTask) { renderFilters(); renderTabs(); renderBoard(); injectStatutoryDeadlines(); }
   if (isMeeting) renderMeetings();
   if (isDash) renderDashboard();
   if (isWorkload) renderWorkload();
+  if (isUnwind) renderUnwind();
   
   updateAlert();
   updateNotifications();
@@ -1182,6 +1185,463 @@ function copyExport() {
     btn.textContent = "✓ Copied!";
     setTimeout(() => { btn.textContent = "Copy to clipboard"; }, 2000);
   });
+}
+
+// ══════════════════════════════════════════════════════════════
+// UNWIND — Chill Zone
+// ══════════════════════════════════════════════════════════════
+
+const UNWIND_STORAGE_KEY   = "blackrose-unwind-chat";
+const VIBE_STORAGE_KEY     = "blackrose-vibe-votes";
+
+const UNWIND_STICKERS = [
+  "😂","🤣","😭","😤","💀","🔥","🥲","😎","🤩","🥹",
+  "😴","🤡","👀","💅","🤌","🫡","🫠","😬","🥴","🤯",
+  "🙃","😏","🤭","🫢","😮‍💨","💪","🎉","🎊","✨","🌚",
+  "😩","🤦","🙈","🐐","👑","🏆","💸","🫶","❤️‍🔥","⚡"
+];
+
+const UNWIND_QUOTES = [
+  "\"Work hard in silence. Let your task list make the noise.\" — Nobody at BRC",
+  "\"The spreadsheet is always greener on the other side.\" — Unknown accountant",
+  "\"If it ain't in QuickBooks, did it even happen?\" — Shadrack, probably",
+  "\"Behind every great accountant is a very confused client.\" — Ancient proverb",
+  "\"We don't make mistakes, we make audit adjustments.\" — BRC Motto",
+  "\"Deadlines are just suggestions made by people who don't file VAT.\" — Mercy",
+  "\"Stay calm and reconcile.\" — The BRC way",
+  "\"Rest is a human right, unless the VAT return is due.\" — KRA, basically",
+];
+
+const REACTION_EMOJIS = ["👍","❤️","😂","😮","😢","🔥","💀","🥲"];
+
+// Seed messages to populate the chat on first load
+const SEED_MESSAGES = [
+  { id: "seed-1", authorId: "diane-marie", type: "text", content: "Guys this UNWIND tab was literally the best idea 😂 finally somewhere we can just vibe", timestamp: "10 Jul · 08:14", reactions: {} },
+  { id: "seed-2", authorId: "greg", type: "text", content: "Finally!! I've been dying to send memes in this app 💀", timestamp: "10 Jul · 08:16", reactions: { "😂": ["mercy", "wangui-muchiri"] } },
+  { id: "seed-3", authorId: "shadrack", type: "sticker", content: "🎉", timestamp: "10 Jul · 08:17", reactions: {} },
+  { id: "seed-4", authorId: "mercy", type: "text", content: "okay but who's the goon this week 👀 don't be shy", timestamp: "10 Jul · 08:19", reactions: { "😂": ["diane-marie", "greg", "carol-nduta"], "🔥": ["shadrack"] } },
+  { id: "seed-5", authorId: "wangui-muchiri", type: "text", content: "The rankings don't lie 😭😭 I'm just gonna go cry in VAT reconciliations", timestamp: "10 Jul · 08:21", reactions: { "💀": ["greg", "mercy"] } },
+  { id: "seed-6", authorId: "carol-nduta", type: "text", content: "LMAOO wangui 💀 but fr tho this is so fun. okay back to work 😤", timestamp: "10 Jul · 08:23", reactions: { "❤️": ["diane-marie"] } },
+];
+
+let _unwindInitialized = false;
+
+// ── Storage ─────────────────────────────────────────────────
+function loadUnwindMessages() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(UNWIND_STORAGE_KEY) || "[]");
+    return saved.length ? saved : [...SEED_MESSAGES];
+  } catch { return [...SEED_MESSAGES]; }
+}
+
+function persistUnwindMessages(msgs) {
+  localStorage.setItem(UNWIND_STORAGE_KEY, JSON.stringify(msgs));
+}
+
+function loadVibeVotes() {
+  try { return JSON.parse(localStorage.getItem(VIBE_STORAGE_KEY) || "{}"); }
+  catch { return {}; }
+}
+
+function persistVibeVotes(votes) {
+  localStorage.setItem(VIBE_STORAGE_KEY, JSON.stringify(votes));
+}
+
+// ── Rankings algorithm ───────────────────────────────────────
+function computeRankings() {
+  return profiles.map(profile => {
+    const mine = tasks.filter(t => t.assignedTo === profile.id);
+    const overdueCount  = mine.filter(t => t.status === "open" && classifyTask(t) === "overdue").length;
+    const urgentOpen    = mine.filter(t => t.status === "open" && t.priority === "urgent").length;
+    const openCount     = mine.filter(t => t.status === "open").length;
+    const completedCount= mine.filter(t => t.status === "completed").length;
+    const slackScore = (overdueCount * 3) + (urgentOpen * 2) + openCount - completedCount;
+    return { profile, slackScore, overdueCount, urgentOpen, openCount, completedCount };
+  }).sort((a, b) => b.slackScore - a.slackScore);
+}
+
+function getRankReason(entry, isGoon) {
+  if (isGoon) {
+    if (entry.overdueCount > 0) return `${entry.overdueCount} overdue · ${entry.openCount} open`;
+    if (entry.urgentOpen > 0)   return `${entry.urgentOpen} urgent open tasks`;
+    return `${entry.openCount} open tasks pending`;
+  } else {
+    if (entry.completedCount > 0) return `${entry.completedCount} done · ${entry.openCount} open`;
+    return `${entry.openCount} open · ${entry.completedCount} done`;
+  }
+}
+
+function renderRankCard(entry, position, isGoon, isTopShowoff) {
+  const medals = isGoon
+    ? ["😈", "😤", "🙈"]
+    : ["🌟", "💪", "😌"];
+  const medal = medals[Math.min(position, 2)];
+  const photo = entry.profile.image
+    ? `<img src="${entry.profile.image}" alt="${escapeHtml(entry.profile.name)}" class="rank-avatar" />`
+    : `<span class="rank-avatar-placeholder">${escapeHtml(entry.profile.name[0])}</span>`;
+  const score = isGoon ? `score: ${entry.slackScore}` : `score: ${-entry.slackScore}`;
+  const topClass = isTopShowoff ? " top-showoff" : "";
+  return `<div class="rank-card${topClass}">
+    <span class="rank-medal">${medal}</span>
+    ${photo}
+    <div class="rank-info">
+      <span class="rank-name">${escapeHtml(entry.profile.name)}</span>
+      <span class="rank-reason">${getRankReason(entry, isGoon)}</span>
+    </div>
+    <span class="rank-score">${score}</span>
+  </div>`;
+}
+
+// ── Vibe Poll ────────────────────────────────────────────────
+function renderVibePoll() {
+  const votes = loadVibeVotes();
+  const myVote = activeProfileId ? votes[activeProfileId] : null;
+  const counts = { thriving: 0, grinding: 0, dead: 0 };
+  Object.values(votes).forEach(v => { if (counts[v] !== undefined) counts[v]++; });
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+  // Mark selected
+  document.querySelectorAll(".vibe-btn").forEach(btn => {
+    btn.classList.toggle("selected", btn.dataset.vibe === myVote);
+  });
+
+  const resultsEl = document.querySelector("#vibeResults");
+  if (total === 0) { resultsEl.hidden = true; return; }
+  resultsEl.hidden = false;
+
+  const vibeLabels = { thriving: "🔥 Thriving", grinding: "😤 Grinding", dead: "💀 Help" };
+  resultsEl.innerHTML = Object.entries(counts).map(([key, count]) => {
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    return `<div class="vibe-bar-row">
+      <span class="vibe-bar-label">${vibeLabels[key]}</span>
+      <div class="vibe-bar-track"><div class="vibe-bar-fill" style="width:${pct}%"></div></div>
+      <span class="vibe-bar-count">${count}</span>
+    </div>`;
+  }).join("");
+}
+
+// ── Chat rendering ───────────────────────────────────────────
+function renderChatBubble(msg) {
+  const isMe = msg.authorId === activeProfileId;
+  const author = getProfile(msg.authorId);
+  const avatarHtml = author.image
+    ? `<img src="${author.image}" alt="${escapeHtml(author.name)}" />`
+    : `<span class="meta-avatar-placeholder">${escapeHtml(author.name[0])}</span>`;
+
+  let bubbleContent = "";
+  if (msg.type === "text") {
+    bubbleContent = `<div class="chat-bubble">${escapeHtml(msg.content)}</div>`;
+  } else if (msg.type === "sticker") {
+    bubbleContent = `<div class="chat-bubble chat-bubble-sticker">${msg.content}</div>`;
+  } else if (msg.type === "image" || msg.type === "gif") {
+    bubbleContent = `<div class="chat-bubble" style="padding:0.25rem;">
+      <img src="${msg.content}" alt="shared image" class="chat-bubble-img" loading="lazy" />
+    </div>`;
+  }
+
+  // Reactions
+  const reactionMap = msg.reactions || {};
+  const reactionChips = Object.entries(reactionMap)
+    .filter(([, users]) => users.length > 0)
+    .map(([emoji, users]) => {
+      const iMine = activeProfileId && users.includes(activeProfileId);
+      return `<button class="reaction-chip ${iMine ? "mine" : ""}" data-msg-id="${msg.id}" data-emoji="${emoji}">
+        ${emoji}<span class="reaction-count">${users.length}</span>
+      </button>`;
+    }).join("");
+
+  const reactBtn = `<button class="add-reaction-btn" data-msg-id="${msg.id}" title="React">+😊</button>`;
+
+  return `<div class="chat-msg ${isMe ? "mine" : "theirs"}" data-msg-id="${msg.id}">
+    <div class="chat-msg-meta">
+      ${avatarHtml}
+      <span>${escapeHtml(author.name)}</span>
+      <span>${msg.timestamp}</span>
+    </div>
+    ${bubbleContent}
+    <div class="reaction-row">
+      ${reactionChips}
+      ${reactBtn}
+    </div>
+  </div>`;
+}
+
+function renderChatMessages() {
+  const msgs = loadUnwindMessages();
+  const container = document.querySelector("#chatMessages");
+  if (!container) return;
+  container.innerHTML = msgs.map(renderChatBubble).join("");
+
+  // Reaction chip clicks (toggle)
+  container.querySelectorAll(".reaction-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const { msgId, emoji } = chip.dataset;
+      toggleReaction(msgId, emoji);
+    });
+  });
+
+  // Add reaction button
+  container.querySelectorAll(".add-reaction-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openReactionPicker(btn);
+    });
+  });
+
+  container.scrollTop = container.scrollHeight;
+}
+
+function toggleReaction(msgId, emoji) {
+  if (!activeProfileId) return;
+  const msgs = loadUnwindMessages();
+  const msg = msgs.find(m => m.id === msgId);
+  if (!msg) return;
+  if (!msg.reactions) msg.reactions = {};
+  if (!msg.reactions[emoji]) msg.reactions[emoji] = [];
+  const idx = msg.reactions[emoji].indexOf(activeProfileId);
+  if (idx === -1) { msg.reactions[emoji].push(activeProfileId); }
+  else            { msg.reactions[emoji].splice(idx, 1); }
+  persistUnwindMessages(msgs);
+  renderChatMessages();
+}
+
+function openReactionPicker(anchorBtn) {
+  // Remove any existing picker
+  document.querySelectorAll(".reaction-picker").forEach(p => p.remove());
+
+  const msgId = anchorBtn.dataset.msgId;
+  const picker = document.createElement("div");
+  picker.className = "reaction-picker";
+  REACTION_EMOJIS.forEach(emoji => {
+    const btn = document.createElement("button");
+    btn.textContent = emoji;
+    btn.addEventListener("click", () => {
+      toggleReaction(msgId, emoji);
+      picker.remove();
+    });
+    picker.appendChild(btn);
+  });
+
+  // Position relative to bubble
+  const bubble = anchorBtn.closest(".chat-msg");
+  bubble.style.position = "relative";
+  bubble.appendChild(picker);
+
+  // Close on outside click
+  const close = (e) => {
+    if (!picker.contains(e.target) && e.target !== anchorBtn) {
+      picker.remove();
+      document.removeEventListener("click", close);
+    }
+  };
+  setTimeout(() => document.addEventListener("click", close), 0);
+}
+
+function postUnwindMessage(type, content) {
+  if (!content || !content.toString().trim()) return;
+  const msgs = loadUnwindMessages();
+  const now = new Date();
+  const ts = now.toLocaleString("en-KE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+  msgs.push({
+    id: createId(),
+    authorId: activeProfileId || profiles[0].id,
+    type,
+    content: content.toString().trim(),
+    timestamp: ts,
+    reactions: {}
+  });
+  persistUnwindMessages(msgs);
+  renderChatMessages();
+}
+
+// ── Sticker / GIF pickers ────────────────────────────────────
+function initStickerPicker() {
+  const grid = document.querySelector("#stickerGrid");
+  if (!grid || grid.children.length) return;
+  grid.innerHTML = UNWIND_STICKERS.map(s =>
+    `<button class="sticker-btn" data-sticker="${s}">${s}</button>`
+  ).join("");
+  grid.querySelectorAll(".sticker-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      postUnwindMessage("sticker", btn.dataset.sticker);
+      document.querySelector("#stickerPicker").hidden = true;
+    });
+  });
+}
+
+// Curated GIFs as fallback (Tenor public media)
+const CURATED_GIFS = [
+  "https://media.tenor.com/xzHk0dZ3tOQAAAAM/laugh-laughing.gif",
+  "https://media.tenor.com/2Ge3uxSi5Z0AAAAC/kermit-the-frog-typing.gif",
+  "https://media.tenor.com/qhFOHJpHvToAAAAM/confused-travolta.gif",
+  "https://media.tenor.com/JLkNXqWkVGQAAAAM/this-is-fine-fire.gif",
+  "https://media.tenor.com/4XHZnfO1DXMAAAAC/i-have-no-idea-what-im-doing.gif",
+  "https://media.tenor.com/5DLuuAYHpmwAAAAM/done-work-done.gif",
+  "https://media.tenor.com/PdKWN2hAhU0AAAAC/michael-scott-no.gif",
+  "https://media.tenor.com/VcA3LZrMDgIAAAAM/friday-finally.gif",
+  "https://media.tenor.com/eqKFX3L7_XAAAAAC/yes-excited.gif",
+];
+
+function renderCuratedGifs() {
+  const grid = document.querySelector("#gifGrid");
+  if (!grid) return;
+  grid.innerHTML = CURATED_GIFS.map(url =>
+    `<img src="${url}" class="gif-thumb" alt="GIF" data-gif-url="${url}" />`
+  ).join("");
+  grid.querySelectorAll(".gif-thumb").forEach(img => {
+    img.addEventListener("click", () => {
+      postUnwindMessage("gif", img.dataset.gifUrl);
+      document.querySelector("#gifPicker").hidden = true;
+    });
+  });
+}
+
+// ── Image upload ─────────────────────────────────────────────
+function handleUnwindImageUpload(file) {
+  if (!file || !file.type.startsWith("image/")) return;
+  if (file.size > 1024 * 1024) {
+    showUnwindToast("❌ Image too large. Max size is 1 MB.");
+    return;
+  }
+  const reader = new FileReader();
+  reader.addEventListener("load", () => postUnwindMessage("image", reader.result));
+  reader.readAsDataURL(file);
+}
+
+function showUnwindToast(text) {
+  const el = document.createElement("div");
+  el.textContent = text;
+  Object.assign(el.style, {
+    position: "fixed", bottom: "2rem", left: "50%", transform: "translateX(-50%)",
+    background: "rgba(20,17,12,0.88)", color: "#fff", padding: "0.6rem 1.2rem",
+    borderRadius: "999px", fontSize: "0.88rem", zIndex: "9999",
+    boxShadow: "0 4px 16px rgba(0,0,0,0.25)", fontFamily: "inherit",
+  });
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ── Main renderUnwind ─────────────────────────────────────────
+function renderUnwind() {
+  // Quote of the day (deterministic by day-of-year)
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  document.querySelector("#unwindQuote").innerHTML =
+    `<em>${UNWIND_QUOTES[dayOfYear % UNWIND_QUOTES.length]}</em>`;
+
+  // Rankings
+  const ranked = computeRankings();
+  const goons    = ranked.slice(0, 3);
+  const showoffs = ranked.slice(3).reverse(); // best performer first
+
+  document.querySelector("#goonsList").innerHTML =
+    goons.map((e, i) => renderRankCard(e, i, true, false)).join("");
+
+  document.querySelector("#showoffsList").innerHTML =
+    showoffs.map((e, i) => renderRankCard(e, i, false, i === 0)).join("");
+
+  // Vibe Poll
+  renderVibePoll();
+
+  // Chat
+  renderChatMessages();
+  initStickerPicker();
+  renderCuratedGifs();
+
+  // Wire up events only once
+  if (_unwindInitialized) return;
+  _unwindInitialized = true;
+
+  // Send text on button click or Enter (Shift+Enter = newline)
+  const textarea = document.querySelector("#chatTextarea");
+  const sendBtn  = document.querySelector("#chatSendBtn");
+
+  const sendText = () => {
+    const text = textarea.value.trim();
+    if (!text) return;
+    postUnwindMessage("text", text);
+    textarea.value = "";
+    textarea.style.height = "auto";
+  };
+  sendBtn.addEventListener("click", sendText);
+  textarea.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); }
+  });
+  // Auto-grow textarea
+  textarea.addEventListener("input", () => {
+    textarea.style.height = "auto";
+    textarea.style.height = Math.min(textarea.scrollHeight, 128) + "px";
+  });
+
+  // Sticker toggle
+  document.querySelector("#stickerToggleBtn").addEventListener("click", () => {
+    const sp = document.querySelector("#stickerPicker");
+    const gp = document.querySelector("#gifPicker");
+    sp.hidden = !sp.hidden;
+    gp.hidden = true;
+  });
+
+  // GIF toggle
+  document.querySelector("#gifToggleBtn").addEventListener("click", () => {
+    const gp = document.querySelector("#gifPicker");
+    const sp = document.querySelector("#stickerPicker");
+    gp.hidden = !gp.hidden;
+    sp.hidden = true;
+  });
+
+  // GIF search (Tenor)
+  document.querySelector("#gifSearchBtn").addEventListener("click", searchTenorGifs);
+  document.querySelector("#gifSearchInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") searchTenorGifs();
+  });
+
+  // Image upload
+  document.querySelector("#chatImageInput").addEventListener("change", (e) => {
+    if (e.target.files[0]) {
+      handleUnwindImageUpload(e.target.files[0]);
+      e.target.value = "";
+    }
+  });
+
+  // Vibe buttons
+  document.querySelectorAll(".vibe-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (!activeProfileId) { showUnwindToast("Log in to cast your vibe!"); return; }
+      const votes = loadVibeVotes();
+      votes[activeProfileId] = btn.dataset.vibe;
+      persistVibeVotes(votes);
+      renderVibePoll();
+    });
+  });
+}
+
+// ── Tenor GIF search ─────────────────────────────────────────
+function searchTenorGifs() {
+  const query = document.querySelector("#gifSearchInput").value.trim();
+  if (!query) { renderCuratedGifs(); return; }
+  // Tenor API v2 (public, no key required for basic use on localhost/personal)
+  const url = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=AIzaSyAyimkuYQYF_FXVALexPzpzuM5f7A7RnOA&limit=9&media_filter=gif`;
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      const grid = document.querySelector("#gifGrid");
+      if (!grid) return;
+      if (!data.results || !data.results.length) {
+        grid.innerHTML = `<p style="font-size:0.8rem;color:var(--muted);grid-column:1/-1;padding:0.5rem;">No GIFs found. Try another search!</p>`;
+        return;
+      }
+      grid.innerHTML = data.results.map(item => {
+        const gifUrl = item.media_formats?.gif?.url || item.media_formats?.tinygif?.url || "";
+        const previewUrl = item.media_formats?.tinygif?.url || gifUrl;
+        return `<img src="${previewUrl}" class="gif-thumb" alt="${escapeHtml(item.title || 'GIF')}" data-gif-url="${gifUrl}" />`;
+      }).join("");
+      grid.querySelectorAll(".gif-thumb").forEach(img => {
+        img.addEventListener("click", () => {
+          postUnwindMessage("gif", img.dataset.gifUrl);
+          document.querySelector("#gifPicker").hidden = true;
+        });
+      });
+    })
+    .catch(() => renderCuratedGifs()); // fallback to curated on network error
 }
 
 render();
