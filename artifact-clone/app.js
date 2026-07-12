@@ -1,20 +1,28 @@
+// ═══════════════════════════════════════════════════════════════════
+//  SUPABASE CLIENT  (credentials come from supabase-config.js)
+// ═══════════════════════════════════════════════════════════════════
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ═══════════════════════════════════════════════════════════════════
+//  CONSTANTS & DEFAULTS
+// ═══════════════════════════════════════════════════════════════════
 const clients = ["All clients", "AMM Law", "BRC Consultancy", "Briq Consultancy", "Multiplier", "Ultimate", "ADH"];
-const today = new Date("2026-07-10T08:00:00");
+const today = new Date();
 const storageKey = "gregu-client-tasks";
 const profileStorageKey = "blackrose-profiles";
 const sessionStorageKey = "blackrose-active-profile";
 const defaultProfiles = [
-  { id: "diane-marie", name: "Diane Marie", details: "Black Rose team member", image: "./assets/diane marie.jpeg" },
-  { id: "greg", name: "Greg", details: "Black Rose team member", image: "./assets/greg.jpeg" },
-  { id: "mercy", name: "Mercy", details: "Black Rose team member", image: "./assets/mercy.jpeg" },
+  { id: "diane-marie", name: "Diane Meria", details: "Black Rose team member", image: "./assets/diane marie.jpeg" },
+  { id: "greg", name: "Gregory Nyataige", details: "Black Rose team member", image: "./assets/greg.jpeg" },
+  { id: "mercy", name: "Mercy Waweru", details: "Black Rose team member", image: "./assets/mercy.jpeg" },
   { id: "wangui-muchiri", name: "Wangui Muchiri", details: "Black Rose team member", image: "./assets/wangui muchiri.jpeg" },
-  { id: "shadrack", name: "Shadrack", details: "Black Rose team member", image: "./assets/Shadrack.jpeg" },
-  { id: "carol-nduta", name: "Carol Nduta", details: "Black Rose team member", image: "" },
+  { id: "shadrack", name: "Shadrack Kojack", details: "Black Rose team member", image: "./assets/Shadrack.jpeg" },
+  { id: "carol-nduta", name: "Profile 6", details: "Vacant Profile", image: "" },
 ];
 
 let selectedClient = "All clients";
-let profiles = loadProfiles();
-let activeProfileId = localStorage.getItem(sessionStorageKey) || "";
+let profiles = [...defaultProfiles];
+let activeProfileId = "";
 let assignmentFilter = "all";
 let activeView = "tasks";
 
@@ -26,6 +34,345 @@ const defaultPasswords = [
 
 let passwords = loadPasswords();
 let activePasswordCategory = "kra";
+
+// ═══════════════════════════════════════════════════════════════════
+//  AUTH STATE  (tracks current Supabase session)
+// ═══════════════════════════════════════════════════════════════════
+let _currentUser = null;  // Supabase auth user
+let _currentUserProfile = null; // matching row from public.profiles
+let _pinMode = "enter";   // "enter" | "set"
+let _pendingPinProfileId = null;
+
+// ═══════════════════════════════════════════════════════════════════
+//  AUTH SCREEN BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════
+async function initAuth() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    _currentUser = session.user;
+    await onSignedIn();
+  } else {
+    showAuthScreen();
+  }
+
+  // Listen for future auth state changes
+  supabase.auth.onAuthStateChange(async (_event, session) => {
+    if (session?.user) {
+      _currentUser = session.user;
+      await onSignedIn();
+    } else {
+      _currentUser = null;
+      _currentUserProfile = null;
+      showAuthScreen();
+    }
+  });
+}
+
+function showAuthScreen() {
+  document.getElementById("authScreen").hidden = false;
+  document.getElementById("loginScreen").hidden = true;
+  document.querySelector(".app-shell").classList.add("locked");
+}
+
+async function onSignedIn() {
+  // Check if this user is approved in our profiles table
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("email", _currentUser.email)
+    .single();
+
+  if (error || !profile) {
+    // Email not found in profiles table
+    showAuthError("Your email is not registered in this system. Contact an admin.");
+    await supabase.auth.signOut();
+    return;
+  }
+
+  if (!profile.approved) {
+    // Show "Awaiting approval" message and sign the user back out
+    document.getElementById("authError").hidden = true;
+    document.getElementById("authPending").hidden = false;
+    document.getElementById("authSubmit").disabled = true;
+    document.getElementById("authScreen").hidden = false;
+    document.getElementById("loginScreen").hidden = true;
+    await supabase.auth.signOut();
+    return;
+  }
+
+  // Approved — load profiles from DB and show the profile picker
+  _currentUserProfile = profile;
+  document.getElementById("authScreen").hidden = true;
+  await loadProfilesFromDB();
+  showProfilePicker();
+}
+
+async function loadProfilesFromDB() {
+  const { data, error } = await supabase.from("profiles").select("*");
+  if (!error && data && data.length) {
+    profiles = data.map(p => ({
+      id: p.id,
+      name: p.name,
+      details: p.details || "Black Rose team member",
+      image: p.image_url || "",
+      email: p.email,
+      approved: p.approved,
+      pin_hash: p.pin_hash || null,
+    }));
+  }
+}
+
+function showProfilePicker() {
+  document.getElementById("loginScreen").hidden = false;
+  document.querySelector(".app-shell").classList.add("locked");
+  renderLogin();
+}
+
+// ── Sign In / Sign Up form handling ─────────────────────────────
+let _authMode = "signin"; // "signin" | "signup"
+
+function setupAuthForm() {
+  const form = document.getElementById("authForm");
+  const tabSignIn = document.getElementById("tabSignIn");
+  const tabSignUp = document.getElementById("tabSignUp");
+  const confirmField = document.getElementById("authConfirmField");
+  const submitBtn = document.getElementById("authSubmit");
+  const togglePwd = document.getElementById("toggleAuthPassword");
+  const pwdInput = document.getElementById("authPassword");
+
+  tabSignIn.addEventListener("click", () => {
+    _authMode = "signin";
+    tabSignIn.classList.add("active");
+    tabSignUp.classList.remove("active");
+    confirmField.hidden = true;
+    submitBtn.textContent = "Sign In";
+    clearAuthMessages();
+  });
+
+  tabSignUp.addEventListener("click", () => {
+    _authMode = "signup";
+    tabSignUp.classList.add("active");
+    tabSignIn.classList.remove("active");
+    confirmField.hidden = false;
+    submitBtn.textContent = "Request Access";
+    clearAuthMessages();
+  });
+
+  togglePwd.addEventListener("click", () => {
+    pwdInput.type = pwdInput.type === "password" ? "text" : "password";
+    togglePwd.textContent = pwdInput.type === "password" ? "👁" : "🙈";
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearAuthMessages();
+    const email = document.getElementById("authEmail").value.trim();
+    const password = document.getElementById("authPassword").value;
+    submitBtn.disabled = true;
+    submitBtn.textContent = _authMode === "signin" ? "Signing in…" : "Requesting access…";
+
+    if (_authMode === "signin") {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        showAuthError(error.message === "Invalid login credentials"
+          ? "Incorrect email or password. Please try again."
+          : error.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Sign In";
+      }
+      // If success, onAuthStateChange fires → onSignedIn()
+    } else {
+      // Sign up — check if email is in our approved profiles table first
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("id, approved")
+        .eq("email", email)
+        .single();
+
+      if (!profileRow) {
+        showAuthError("This email is not authorised. Contact an admin to add you.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Request Access";
+        return;
+      }
+
+      const confirm = document.getElementById("authConfirm").value;
+      if (password !== confirm) {
+        showAuthError("Passwords do not match.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Request Access";
+        return;
+      }
+
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        showAuthError(error.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Request Access";
+      } else if (!profileRow.approved) {
+        document.getElementById("authPending").hidden = false;
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Awaiting Approval";
+      }
+    }
+  });
+
+  // Sign out button on profile picker screen
+  document.getElementById("authSignOutBtn").addEventListener("click", async () => {
+    activeProfileId = "";
+    await supabase.auth.signOut();
+  });
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById("authError");
+  el.textContent = msg;
+  el.hidden = false;
+}
+
+function clearAuthMessages() {
+  document.getElementById("authError").hidden = true;
+  document.getElementById("authPending").hidden = false ? false : true;
+  document.getElementById("authPending").hidden = true;
+  const submitBtn = document.getElementById("authSubmit");
+  submitBtn.disabled = false;
+  submitBtn.textContent = _authMode === "signin" ? "Sign In" : "Request Access";
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  PIN MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════
+async function sha256(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function setupPinDialog() {
+  const dialog = document.getElementById("pinDialog");
+  const submitBtn = document.getElementById("pinSubmitBtn");
+  const cancelBtn = document.getElementById("pinCancelBtn");
+  const inputs = Array.from(document.querySelectorAll(".pin-input"));
+
+  // Auto-advance inputs and handle backspace
+  inputs.forEach((input, idx) => {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Backspace" && !input.value && idx > 0) {
+        inputs[idx - 1].focus();
+        inputs[idx - 1].classList.remove("filled");
+      }
+      // Only allow digits
+      if (!/^\d$/.test(e.key) && !["Backspace", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+      }
+    });
+    input.addEventListener("input", () => {
+      input.classList.toggle("filled", !!input.value);
+      if (input.value && idx < 3) inputs[idx + 1].focus();
+      // Auto-submit when all 4 are filled
+      if (inputs.every(i => i.value)) submitBtn.click();
+    });
+  });
+
+  submitBtn.addEventListener("click", async () => {
+    const pin = inputs.map(i => i.value).join("");
+    if (pin.length < 4) return;
+
+    const profile = profiles.find(p => p.id === _pendingPinProfileId);
+    if (!profile) return;
+
+    const hash = await sha256(pin);
+
+    if (_pinMode === "set") {
+      // Save new PIN hash to Supabase
+      const { error } = await supabase
+        .from("profiles")
+        .update({ pin_hash: hash })
+        .eq("id", profile.id);
+
+      if (!error) {
+        profile.pin_hash = hash;
+        dialog.close();
+        activateProfile(_pendingPinProfileId);
+      } else {
+        showPinError("Failed to save PIN. Please try again.");
+      }
+    } else {
+      // Verify PIN
+      if (hash === profile.pin_hash) {
+        dialog.close();
+        activateProfile(_pendingPinProfileId);
+      } else {
+        shakePin(inputs);
+        showPinError("Incorrect PIN. Please try again.");
+        inputs.forEach(i => { i.value = ""; i.classList.remove("filled"); });
+        inputs[0].focus();
+      }
+    }
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    dialog.close();
+    clearPinInputs();
+  });
+}
+
+function openPinDialog(profile) {
+  _pendingPinProfileId = profile.id;
+  const dialog = document.getElementById("pinDialog");
+  const avatarWrap = document.getElementById("pinAvatarWrap");
+  const title = document.getElementById("pinTitle");
+  const subtitle = document.getElementById("pinSubtitle");
+  const setInfo = document.getElementById("pinSetInfo");
+  const errorEl = document.getElementById("pinError");
+
+  // Render avatar
+  avatarWrap.innerHTML = profile.image
+    ? `<img src="${profile.image}" alt="${escapeHtml(profile.name)}" />`
+    : `<span class="pin-avatar-placeholder">${escapeHtml(profile.name[0])}</span>`;
+
+  if (!profile.pin_hash) {
+    // First time — set PIN mode
+    _pinMode = "set";
+    title.textContent = `Set a PIN for ${profile.name}`;
+    subtitle.textContent = "Choose a 4-digit PIN to secure your profile.";
+    setInfo.hidden = false;
+    document.getElementById("pinSubmitBtn").textContent = "Set PIN";
+  } else {
+    _pinMode = "enter";
+    title.textContent = `Welcome back, ${profile.name.split(" ")[0]}`;
+    subtitle.textContent = "Enter your 4-digit PIN to unlock your profile.";
+    setInfo.hidden = true;
+    document.getElementById("pinSubmitBtn").textContent = "Unlock";
+  }
+
+  errorEl.hidden = true;
+  clearPinInputs();
+  dialog.showModal();
+  setTimeout(() => document.getElementById("pin0").focus(), 100);
+}
+
+function clearPinInputs() {
+  document.querySelectorAll(".pin-input").forEach(i => {
+    i.value = "";
+    i.classList.remove("filled");
+  });
+}
+
+function showPinError(msg) {
+  const el = document.getElementById("pinError");
+  el.textContent = msg;
+  el.hidden = false;
+}
+
+function shakePin(inputs) {
+  inputs.forEach(i => {
+    i.classList.remove("shake");
+    void i.offsetWidth; // reflow to restart animation
+    i.classList.add("shake");
+  });
+}
+
+
 
 /**
  * iOS Safari Fix: showModal() on a <dialog> can place it at the document top
@@ -395,10 +742,8 @@ function renderSession() {
 }
 
 function renderLogin() {
-  const hasActiveProfile = profiles.some((profile) => profile.id === activeProfileId);
-  appShell.classList.toggle("locked", !hasActiveProfile);
-  loginScreen.hidden = hasActiveProfile;
-
+  // NOTE: App shell and login screen visibility is managed by the auth layer (initAuth/onSignedIn).
+  // This function only re-renders the profile grid contents.
   profileGrid.innerHTML = profiles.map(renderProfileCard).join("");
   profileGrid.querySelectorAll(".profile-card").forEach((card) => {
     card.addEventListener("click", () => selectProfile(card.dataset.profileId));
@@ -427,19 +772,28 @@ function renderProfileCard(profile) {
 }
 
 function selectProfile(profileId) {
+  const profile = profiles.find(p => p.id === profileId);
+  if (!profile) return;
+  openPinDialog(profile);
+}
+
+function activateProfile(profileId) {
   activeProfileId = profileId;
-  localStorage.setItem(sessionStorageKey, activeProfileId);
   assignmentFilter = "all";
   activeView = "tasks";
+  document.getElementById("loginScreen").hidden = true;
+  document.querySelector(".app-shell").classList.remove("locked");
   render();
 }
 
 function showLogin() {
   activeProfileId = "";
-  localStorage.removeItem(sessionStorageKey);
   assignmentFilter = "all";
   activeView = "tasks";
-  render();
+  // Return to profile picker (stay signed in to Supabase)
+  document.getElementById("loginScreen").hidden = false;
+  document.querySelector(".app-shell").classList.add("locked");
+  renderLogin();
 }
 
 function openProfileDialog(profile) {
@@ -1832,9 +2186,12 @@ function renderPasswords() {
   });
 }
 
-// Initialize passwords managers
+// Initialize passwords manager
 initClientDatalist();
 initPasswordFilters();
 document.querySelector("#addPasswordRowBtn").addEventListener("click", addPasswordRow);
 
-render();
+// ── Bootstrap: auth → PIN → app ─────────────────────────────────
+setupAuthForm();
+setupPinDialog();
+initAuth(); // async - shows auth screen or profile picker based on session

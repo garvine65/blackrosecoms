@@ -3,22 +3,85 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Black Rose Consulting - Client Task Tracker</title>
+    <title>Black Rose Consultancy - Client Task Tracker</title>
+    <meta name="description" content="Black Rose Consultancy internal client task & deadline tracker. Secure, team-only access." />
     <link rel="stylesheet" href="./styles.css" />
+    <!-- Supabase client library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- App configuration (Supabase URL + key) -->
+    <script src="./supabase-config.js"></script>
   </head>
   <body>
-    <section class="login-screen" id="loginScreen">
+    <!-- ══════════════════════════════════════════════════════════
+         AUTH SCREEN  (email + password gate before the app)
+         ══════════════════════════════════════════════════════════ -->
+    <section class="auth-screen" id="authScreen">
+      <div class="auth-watermark" aria-hidden="true"></div>
+      <div class="auth-panel">
+        <header class="auth-header">
+          <img src="./assets/logo.jpeg" alt="Black Rose Consultancy" class="auth-logo" />
+          <h1>Black Rose Consultancy</h1>
+          <p class="auth-subtitle">Internal team portal — authorised access only</p>
+        </header>
+
+        <!-- Login form -->
+        <form class="auth-form" id="authForm" novalidate>
+          <div class="auth-tab-bar">
+            <button type="button" class="auth-tab active" id="tabSignIn">Sign In</button>
+            <button type="button" class="auth-tab" id="tabSignUp">Request Access</button>
+          </div>
+
+          <div class="auth-field">
+            <label for="authEmail">Email address</label>
+            <input type="email" id="authEmail" placeholder="yourname@blackrose.co.ke" autocomplete="email" required />
+          </div>
+
+          <div class="auth-field" id="authPasswordField">
+            <label for="authPassword">Password</label>
+            <div class="auth-password-wrapper">
+              <input type="password" id="authPassword" placeholder="Enter your password" autocomplete="current-password" required />
+              <button type="button" class="auth-password-toggle" id="toggleAuthPassword" title="Toggle password">👁</button>
+            </div>
+          </div>
+
+          <div class="auth-field" id="authConfirmField" hidden>
+            <label for="authConfirm">Confirm password</label>
+            <div class="auth-password-wrapper">
+              <input type="password" id="authConfirm" placeholder="Confirm your password" autocomplete="new-password" />
+            </div>
+          </div>
+
+          <p class="auth-error" id="authError" hidden></p>
+
+          <!-- Pending approval state -->
+          <div class="auth-pending" id="authPending" hidden>
+            <span class="auth-pending-icon">⏳</span>
+            <strong>Awaiting Admin Approval</strong>
+            <p>Your account has been created. Please wait for an admin to approve your access. Once approved, sign in again.</p>
+          </div>
+
+          <button type="submit" class="primary-button auth-submit" id="authSubmit">Sign In</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════
+         PROFILE SELECTION SCREEN  (after email/password login)
+         ══════════════════════════════════════════════════════════ -->
+    <section class="login-screen" id="loginScreen" hidden>
       <div class="login-watermark" aria-hidden="true"></div>
       <div class="login-panel">
         <header class="login-header">
           <img src="./assets/logo.jpeg" alt="Black Rose Consulting" />
           <div>
             <h1>Black Rose Consultancy</h1>
-            <p>Select a profile to continue</p>
+            <p id="profileSelectSubtitle">Select your profile to continue</p>
           </div>
         </header>
-
         <div class="profile-grid" id="profileGrid" aria-label="Profiles"></div>
+        <div class="auth-signout-bar">
+          <button type="button" class="outline-button compact-button" id="authSignOutBtn">Sign Out</button>
+        </div>
       </div>
     </section>
 
@@ -461,6 +524,35 @@
       </form>
     </dialog>
 
+    <!-- ══════════════════════════════════════════════════════════
+         PIN ENTRY DIALOG  (4-digit lock per profile)
+         ══════════════════════════════════════════════════════════ -->
+    <dialog id="pinDialog" class="pin-dialog">
+      <div class="pin-dialog-inner">
+        <div class="pin-avatar-wrap" id="pinAvatarWrap">
+          <!-- Profile photo or initials injected by JS -->
+        </div>
+        <h2 class="pin-title" id="pinTitle">Enter your PIN</h2>
+        <p class="pin-subtitle" id="pinSubtitle">Enter your 4-digit PIN to access this profile</p>
+
+        <div class="pin-inputs" id="pinInputs" aria-label="4-digit PIN entry">
+          <input class="pin-input" type="password" inputmode="numeric" maxlength="1" id="pin0" aria-label="PIN digit 1" />
+          <input class="pin-input" type="password" inputmode="numeric" maxlength="1" id="pin1" aria-label="PIN digit 2" />
+          <input class="pin-input" type="password" inputmode="numeric" maxlength="1" id="pin2" aria-label="PIN digit 3" />
+          <input class="pin-input" type="password" inputmode="numeric" maxlength="1" id="pin3" aria-label="PIN digit 4" />
+        </div>
+
+        <p class="pin-error" id="pinError" hidden>Incorrect PIN. Please try again.</p>
+        <p class="pin-info" id="pinSetInfo" hidden>You don't have a PIN yet. Set a 4-digit PIN above to secure your profile.</p>
+
+        <div class="pin-actions">
+          <button type="button" class="outline-button compact-button" id="pinCancelBtn">Cancel</button>
+          <button type="button" class="primary-button" id="pinSubmitBtn">Unlock</button>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="./supabase-config.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
