@@ -245,29 +245,6 @@ button {
     radial-gradient(circle at 50% 48%, transparent 0 26rem, rgba(248, 246, 240, 0.38) 43rem);
 }
 
-.alert-bar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.1rem 2.25rem;
-  background: var(--red);
-  color: white;
-  box-shadow: 0 10px 24px rgba(20, 35, 59, 0.16);
-}
-
-.alert-bar[hidden] {
-  display: none;
-}
-
-.alert-actions {
-  display: flex;
-  gap: 0.65rem;
-  flex-wrap: wrap;
-}
 
 .notification-banner {
   display: flex;
@@ -394,27 +371,6 @@ main {
   border-color: var(--line);
 }
 
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.1rem;
-  border-radius: 999px;
-  border: 1px solid;
-  padding: 0 0.9rem;
-  font-family: "Courier New", monospace;
-  font-size: 0.95rem;
-  background: var(--white);
-}
-
-.status-pill.warning {
-  color: var(--red);
-  border-color: #d98686;
-}
-
-.status-pill.synced {
-  color: var(--green);
-  border-color: #86aa99;
-}
 
 .tabs {
   display: flex;
@@ -615,6 +571,24 @@ main {
 
 .details-cell {
   color: var(--muted);
+}
+
+.text-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: var(--amber);
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline;
+}
+
+.text-link-btn:hover {
+  color: var(--ink);
 }
 
 .actions-cell {
@@ -1016,15 +990,13 @@ dialog::before {
     opacity: 0.28;
   }
 
-  .alert-bar,
   .masthead,
   main {
     padding-inline: 1rem;
   }
 
   .masthead,
-  .view-heading,
-  .alert-bar {
+  .view-heading {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -2066,7 +2038,7 @@ dialog::before {
 }
 
 @media print {
-  .alert-bar, .masthead, .tabs, .toolbar, .view-toggle, .view-toggle-wrapper,
+  .masthead, .tabs, .toolbar, .view-toggle, .view-toggle-wrapper,
   .notification-banner, .export-panel > section { display: none !important; }
   .export-text { border: none; max-height: none; font-size: 0.9rem; }
 }

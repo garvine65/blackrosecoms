@@ -197,8 +197,6 @@ const clientTabs = document.querySelector("#clientTabs");
 const taskBoard = document.querySelector("#taskBoard");
 const viewTitle = document.querySelector("#viewTitle");
 const openTaskCount = document.querySelector("#openTaskCount");
-const alertBar = document.querySelector("#alertBar");
-const alertText = document.querySelector("#alertText");
 const taskDialog = document.querySelector("#taskDialog");
 const taskForm = document.querySelector("#taskForm");
 const dialogTitle = document.querySelector("#dialogTitle");
@@ -230,11 +228,28 @@ document.querySelector("#newTaskButton").addEventListener("click", () => openTas
 document.querySelector("#newMeetingButton").addEventListener("click", () => openMeetingDialog());
 document.querySelector("#meetingsScheduleBtn").addEventListener("click", () => openMeetingDialog());
 document.querySelector("#switchProfileButton").addEventListener("click", showLogin);
-document.querySelector("#dismissButton").addEventListener("click", () => (alertBar.hidden = true));
-document.querySelector("#snoozeButton").addEventListener("click", () => {
-  alertBar.hidden = true;
-  setTimeout(updateAlert, 10 * 60 * 1000);
+
+// Toggle see more / see less for long task details
+taskBoard.addEventListener("click", (event) => {
+  const toggleBtn = event.target.closest(".toggle-details-btn");
+  if (!toggleBtn) return;
+  const container = toggleBtn.closest(".task-details-text");
+  if (!container) return;
+  
+  const shortText = container.querySelector(".short-text");
+  const fullText = container.querySelector(".full-text");
+  if (shortText && fullText) {
+    const isShowingFull = !fullText.hidden;
+    if (isShowingFull) {
+      shortText.hidden = false;
+      fullText.hidden = true;
+    } else {
+      shortText.hidden = true;
+      fullText.hidden = false;
+    }
+  }
 });
+
 document.querySelector("#notifyButton").addEventListener("click", async () => {
   if ("Notification" in window) await Notification.requestPermission();
 });
@@ -365,7 +380,6 @@ function render() {
   if (isWorkload) renderWorkload();
   if (isUnwind) renderUnwind();
   
-  updateAlert();
   updateNotifications();
 }
 
@@ -540,6 +554,21 @@ function renderSection(key, title, empty, scoped) {
   </article>`;
 }
 
+function formatTaskDetails(detailsText) {
+  if (!detailsText) return "";
+  const words = detailsText.trim().split(/\s+/);
+  if (words.length <= 10) {
+    return escapeHtml(detailsText);
+  }
+  const shortText = words.slice(0, 10).join(" ");
+  return `
+    <div class="task-details-text">
+      <span class="short-text">${escapeHtml(shortText)}... <button class="text-link-btn toggle-details-btn" type="button">See more</button></span>
+      <span class="full-text" hidden>${escapeHtml(detailsText)} <button class="text-link-btn toggle-details-btn" type="button">See less</button></span>
+    </div>
+  `;
+}
+
 function renderTaskRow(task, clientColumn) {
   const completed = task.status === "completed";
   const assignedTo = getProfile(task.assignedTo);
@@ -562,7 +591,7 @@ function renderTaskRow(task, clientColumn) {
       <span class="assigned-by">by ${escapeHtml(assignedBy.name)}</span>
     </td>
     <td class="due-cell" data-label="Due">${formatDue(task.due)}${countdown ? `<br/><span class="countdown-badge ${countdown.cls}">${countdown.label}</span>` : ""}</td>
-    <td class="details-cell" data-label="Details">${escapeHtml(task.details)}</td>
+    <td class="details-cell" data-label="Details">${formatTaskDetails(task.details)}</td>
     <td class="actions-cell" data-label="Actions">
       <div class="row-actions">
         <button class="icon-button" title="${completed ? "Restore" : "Complete"}" data-action="${completed ? "restore" : "complete"}" data-id="${task.id}">${completed ? "↻" : "✓"}</button>
@@ -644,33 +673,7 @@ function saveTask(event) {
   render();
 }
 
-function updateAlert() {
-  if (!activeProfileId) {
-    alertBar.hidden = true;
-    return;
-  }
 
-  const openTasks = tasks.filter((task) => task.status === "open");
-  const sortedTasks = [...openTasks].sort((a, b) => new Date(a.due) - new Date(b.due));
-
-  const myDueTask = sortedTasks.find((task) => task.assignedTo === activeProfileId);
-
-  if (myDueTask) {
-    alertText.textContent = `Due now (Assigned to you): ${myDueTask.client} - ${myDueTask.title}`;
-    alertBar.hidden = false;
-    return;
-  }
-
-  if (sortedTasks.length) {
-    const earliestTask = sortedTasks[0];
-    const assignee = getProfile(earliestTask.assignedTo);
-    alertText.textContent = `Due now (${assignee.name}): ${earliestTask.client} - ${earliestTask.title}`;
-    alertBar.hidden = false;
-    return;
-  }
-
-  alertBar.hidden = true;
-}
 
 function formatDue(value) {
   const date = new Date(value);
