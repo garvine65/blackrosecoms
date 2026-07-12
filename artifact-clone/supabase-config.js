@@ -9,7 +9,7 @@
 
 // ⚠️  FILL IN YOUR PROJECT URL BELOW  ⚠️
 // Example: https://abcdefghijkl.supabase.co
-const SUPABASE_URL = "https://REPLACE_WITH_YOUR_PROJECT_URL.supabase.co";
+const SUPABASE_URL = "https://gulxkinwqdnempzeufer.supabase.co";
 
 // Publishable (anon) key - safe for client-side use
 const SUPABASE_ANON_KEY = "sb_publishable_jMxabeUek8ibBY4AoPUuHA_UrApy0tD";
