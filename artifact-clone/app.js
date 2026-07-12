@@ -82,9 +82,15 @@ async function onSignedIn() {
     .eq("email", _currentUser.email)
     .single();
 
+  const submitBtn = document.getElementById("authSubmit");
+
   if (error || !profile) {
     // Email not found in profiles table
-    showAuthError("Your email is not registered in this system. Contact an admin.");
+    showAuthError("Account exists, but your email is not in the 'profiles' table. Add it via Supabase Dashboard first.");
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = _authMode === "signin" ? "Sign In" : "Request Access";
+    }
     await supabase.auth.signOut();
     return;
   }
@@ -93,7 +99,10 @@ async function onSignedIn() {
     // Show "Awaiting approval" message and sign the user back out
     document.getElementById("authError").hidden = true;
     document.getElementById("authPending").hidden = false;
-    document.getElementById("authSubmit").disabled = true;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = _authMode === "signin" ? "Sign In" : "Request Access";
+    }
     document.getElementById("authScreen").hidden = false;
     document.getElementById("loginScreen").hidden = true;
     await supabase.auth.signOut();
@@ -182,20 +191,6 @@ function setupAuthForm() {
       }
       // If success, onAuthStateChange fires → onSignedIn()
     } else {
-      // Sign up — check if email is in our approved profiles table first
-      const { data: profileRow } = await supabase
-        .from("profiles")
-        .select("id, approved")
-        .eq("email", email)
-        .single();
-
-      if (!profileRow) {
-        showAuthError("This email is not authorised. Contact an admin to add you.");
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Request Access";
-        return;
-      }
-
       const confirm = document.getElementById("authConfirm").value;
       if (password !== confirm) {
         showAuthError("Passwords do not match.");
@@ -204,15 +199,21 @@ function setupAuthForm() {
         return;
       }
 
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
         showAuthError(error.message);
         submitBtn.disabled = false;
         submitBtn.textContent = "Request Access";
-      } else if (!profileRow.approved) {
-        document.getElementById("authPending").hidden = false;
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Awaiting Approval";
+      } else {
+        // Sign up successful
+        if (!data.session) {
+          // Email confirmation required by Supabase settings
+          showAuthError("Account created! Please check your email for a confirmation link.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Request Access";
+        } else {
+          // Auto-logged in. onAuthStateChange will trigger onSignedIn().
+        }
       }
     }
   });
