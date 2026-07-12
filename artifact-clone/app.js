@@ -27,6 +27,22 @@ const defaultPasswords = [
 let passwords = loadPasswords();
 let activePasswordCategory = "kra";
 
+/**
+ * iOS Safari Fix: showModal() on a <dialog> can place it at the document top
+ * rather than the current viewport when the page is scrolled.
+ * This helper calls showModal() then immediately scrolls the dialog into view
+ * as a belt-and-suspenders safety net for older iOS versions.
+ */
+function openModal(dialog) {
+  dialog.showModal();
+  // On iOS the browser may not honour position:fixed immediately; scrollIntoView
+  // ensures the dialog is visible in the current viewport.
+  requestAnimationFrame(() => {
+    dialog.scrollIntoView({ block: "center", behavior: "instant" });
+  });
+}
+
+
 function loadPasswords() {
   try {
     const saved = JSON.parse(localStorage.getItem(passwordStorageKey) || "[]");
@@ -417,7 +433,7 @@ function openProfileDialog(profile) {
   document.querySelector("#profileName").value = profile.name;
   document.querySelector("#profileDetails").value = profile.details;
   document.querySelector("#profileImage").value = "";
-  profileDialog.showModal();
+  openModal(profileDialog);
 }
 
 function saveProfile(event) {
@@ -599,7 +615,7 @@ function openTaskDialog(task) {
   document.querySelector("#taskRepeat").value = task?.repeat ?? "";
   document.querySelector("#taskStatus").value = task?.status ?? "open";
   renderChecklistEditor(task?.checklist ?? []);
-  taskDialog.showModal();
+  openModal(taskDialog);
 }
 
 function saveTask(event) {
@@ -866,7 +882,7 @@ function openMeetingDialog(meeting) {
     </label>`;
   }).join("");
 
-  meetingDialog.showModal();
+  openModal(meetingDialog);
 }
 
 function saveMeeting(event) {
@@ -921,7 +937,7 @@ function openRecurrenceDialog(task) {
   const nextDate = getNextOccurrenceDate(task.due.slice(0, 10), task.repeat);
   document.querySelector("#recurrenceDate").value = nextDate;
   document.querySelector("#recurrenceTime").value = task.due.slice(11) || "09:00";
-  recurrenceDialog.showModal();
+  openModal(recurrenceDialog);
 }
 
 function saveRecurrence(event) {
@@ -1021,7 +1037,7 @@ function openCommentsDialog(task) {
   document.querySelector("#commentsTaskTitle").textContent = task.title;
   renderComments(task.comments || []);
   document.querySelector("#commentInput").value = "";
-  commentsDialog.showModal();
+  openModal(commentsDialog);
 }
 
 function renderComments(comments) {

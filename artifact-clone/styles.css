@@ -672,7 +672,12 @@ main {
 }
 
 dialog {
-  position: relative;
+  /* Fix iOS Safari: dialog defaults to position:absolute (document-relative),
+     causing it to appear off-screen when the page is scrolled.
+     position:fixed + inset:0 + margin:auto keeps it centred in the viewport. */
+  position: fixed;
+  inset: 0;
+  margin: auto;
   width: min(680px, calc(100vw - 2rem));
   max-height: min(90vh, 90dvh);
   border: 1px solid var(--line);
@@ -1094,7 +1099,9 @@ dialog::before {
   dialog {
     width: calc(100vw - 1rem);
     max-height: min(88vh, 88dvh);
-    margin: auto 0.5rem;
+    /* Keep centred in viewport on small screens (iOS fix) */
+    inset: 0;
+    margin: auto;
   }
 
   .task-form {
