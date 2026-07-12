@@ -47,16 +47,27 @@ let _pendingPinProfileId = null;
 //  AUTH SCREEN BOOTSTRAP
 // ═══════════════════════════════════════════════════════════════════
 async function initAuth() {
+  console.log('[BlackRose Auth] initAuth() starting...');
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.user) {
+    console.log('[BlackRose Auth] Existing session found for:', session.user.email);
     _currentUser = session.user;
     await onSignedIn();
   } else {
+    console.log('[BlackRose Auth] No existing session, showing auth screen.');
     showAuthScreen();
   }
 
-  // Listen for future auth state changes
+  // Listen for future auth state changes.
+  // Skip INITIAL_SESSION because we already handle it with getSession() above.
+  // Without this guard, onSignedIn() would be called TWICE on page load,
+  // creating a race condition that silently breaks the login flow.
   supabase.auth.onAuthStateChange(async (_event, session) => {
+    console.log('[BlackRose Auth] onAuthStateChange:', _event, '| user:', session?.user?.email ?? 'none');
+    if (_event === 'INITIAL_SESSION') {
+      console.log('[BlackRose Auth] Skipping INITIAL_SESSION (handled by getSession above).');
+      return;
+    }
     if (session?.user) {
       _currentUser = session.user;
       await onSignedIn();
@@ -69,12 +80,25 @@ async function initAuth() {
 }
 
 function showAuthScreen() {
+  // Preserve any error message that was set before this is called (e.g. from onSignedIn)
+  const existingError = document.getElementById("authError");
+  const errorWasVisible = existingError && !existingError.hidden;
+  const errorText = existingError ? existingError.textContent : "";
+
   document.getElementById("authScreen").hidden = false;
   document.getElementById("loginScreen").hidden = true;
   document.querySelector(".app-shell").classList.add("locked");
+
+  // Restore error if it was showing (signOut triggers this, which would lose the message)
+  if (errorWasVisible && errorText) {
+    existingError.hidden = false;
+    existingError.textContent = errorText;
+  }
 }
 
 async function onSignedIn() {
+  console.log('[BlackRose Auth] onSignedIn() called for:', _currentUser?.email);
+
   // Check if this user is approved in our profiles table
   const { data: profile, error } = await supabase
     .from("profiles")
@@ -82,21 +106,34 @@ async function onSignedIn() {
     .eq("email", _currentUser.email)
     .single();
 
+  console.log('[BlackRose Auth] Profile lookup result:', { profile, error });
+
   const submitBtn = document.getElementById("authSubmit");
 
   if (error || !profile) {
-    // Email not found in profiles table
-    showAuthError("Account exists, but your email is not in the 'profiles' table. Add it via Supabase Dashboard first.");
+    // Surface the REAL error from Supabase so we can diagnose it
+    let errMsg;
+    if (error) {
+      console.error('[BlackRose Auth] Supabase error on profiles lookup:', error);
+      errMsg = `Login failed — DB error: "${error.message}" (code: ${error.code}). Check browser console (F12) for details.`;
+    } else {
+      console.error('[BlackRose Auth] No profile row found for:', _currentUser.email);
+      errMsg = `Your email (${_currentUser.email}) is not in the profiles table. Ask an admin to add it in Supabase Dashboard.`;
+    }
+    showAuthError(errMsg);
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.textContent = _authMode === "signin" ? "Sign In" : "Request Access";
     }
+    // Sign out silently — the onAuthStateChange will call showAuthScreen()
+    // but we preserve the error message by setting it BEFORE signOut()
     await supabase.auth.signOut();
     return;
   }
 
   if (!profile.approved) {
     // Show "Awaiting approval" message and sign the user back out
+    console.warn('[BlackRose Auth] User exists but is not approved:', _currentUser.email);
     document.getElementById("authError").hidden = true;
     document.getElementById("authPending").hidden = false;
     if (submitBtn) {
@@ -110,6 +147,7 @@ async function onSignedIn() {
   }
 
   // Approved — load profiles from DB and show the profile picker
+  console.log('[BlackRose Auth] User approved, loading app for:', _currentUser.email);
   _currentUserProfile = profile;
   document.getElementById("authScreen").hidden = true;
   await loadProfilesFromDB();
