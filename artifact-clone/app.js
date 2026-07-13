@@ -493,10 +493,6 @@ if (savedTasks.length) tasks = savedTasks;
 // (Users can manually reassign existing tasks to ADH if needed)
 tasks = tasks.map(t => t.client === "Ultimate & ADH" ? { ...t, client: "Ultimate" } : t);
 
-// Migration: purge all auto-generated KRA tasks from localStorage
-tasks = tasks.filter(t => t.source !== "kra");
-persistTasks(); // Save the cleaned list back to the browser immediately
-
 tasks = tasks.map(normalizeTask);
 
 
@@ -1466,7 +1462,12 @@ function renderWorkload() {
 }
 
 // ── Feature 5: KRA/iTax Statutory Calendar ────────────────────────────────────
-const kraCalendar = [];
+const kraCalendar = [
+  { title: "VAT Return Filing", day: 20, client: "BRC Consultancy", details: "File monthly VAT return on iTax before the 20th. Prepare and review before submission.", assignTo: "shadrack" },
+  { title: "PAYE Filing", day: 9, client: "BRC Consultancy", details: "File monthly PAYE returns on iTax and remit by the 9th of the month.", assignTo: "shadrack" },
+  { title: "Withholding Tax Filing", day: 20, client: "BRC Consultancy", details: "File withholding tax certificates and remit by the 20th.", assignTo: "mercy" },
+  { title: "Corporate Income Tax Instalment", day: 20, client: "BRC Consultancy", details: "Quarterly instalment tax (4th month, 6th month, 9th month, 12th month).", assignTo: "mercy" },
+];
 
 function injectStatutoryDeadlines() {
   const now = new Date();
@@ -1477,6 +1478,11 @@ function injectStatutoryDeadlines() {
   kraCalendar.forEach(item => {
     const dueDate = new Date(yr, mo, item.day, 9, 0);
     const dueDateStr = dueDate.toISOString().slice(0, 16);
+    
+    // Only auto-generate if we are 4 days or less from the deadline
+    const daysUntilDue = (dueDate - now) / (1000 * 60 * 60 * 24);
+    if (daysUntilDue > 4) return;
+
     const existsThisMonth = tasks.some(
       t => t.source === "kra" && t.title === item.title && t.due.slice(0, 7) === dueDateStr.slice(0, 7)
     );
