@@ -760,32 +760,75 @@ function openProfileDialog(profile) {
   openModal(profileDialog);
 }
 
-function saveProfile(event) {
+async function saveProfile(event) {
   event.preventDefault();
   const id = document.querySelector("#profileId").value;
   const imageInput = document.querySelector("#profileImage");
+  const saveBtn = document.querySelector("#saveProfileButton");
+
   const nextProfile = {
     ...profiles.find((profile) => profile.id === id),
     name: document.querySelector("#profileName").value,
     details: document.querySelector("#profileDetails").value,
   };
 
-  const finish = (image) => {
-    if (image) nextProfile.image = image;
-    profiles = profiles.map((profile) => (profile.id === id ? nextProfile : profile));
-    persistProfiles();
-    profileDialog.close();
-    render();
-  };
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving…";
 
-  if (!imageInput.files.length) {
-    finish("");
+  // ── Upload image to Supabase Storage if a new file was chosen ──
+  if (imageInput.files.length) {
+    const file = imageInput.files[0];
+    const ext = file.name.split(".").pop();
+    const path = `${id}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("profile-images")
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (uploadError) {
+      console.error("[BlackRose] Image upload failed:", uploadError);
+      alert(`Image upload failed: ${uploadError.message}`);
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save profile";
+      return;
+    }
+
+    // Get the public URL for the uploaded file
+    const { data: urlData } = supabase.storage
+      .from("profile-images")
+      .getPublicUrl(path);
+
+    nextProfile.image = urlData.publicUrl;
+    nextProfile.image_url = urlData.publicUrl;
+  }
+
+  // ── Save name, details, and image_url to Supabase profiles table ──
+  const updatePayload = {
+    name: nextProfile.name,
+    details: nextProfile.details,
+  };
+  if (nextProfile.image_url) updatePayload.image_url = nextProfile.image_url;
+
+  const { error: dbError } = await supabase
+    .from("profiles")
+    .update(updatePayload)
+    .eq("id", id);
+
+  if (dbError) {
+    console.error("[BlackRose] Profile DB update failed:", dbError);
+    alert(`Profile save failed: ${dbError.message}`);
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save profile";
     return;
   }
 
-  const reader = new FileReader();
-  reader.addEventListener("load", () => finish(reader.result));
-  reader.readAsDataURL(imageInput.files[0]);
+  // ── Update local state ──
+  profiles = profiles.map((profile) => (profile.id === id ? nextProfile : profile));
+  persistProfiles();
+  saveBtn.disabled = false;
+  saveBtn.textContent = "Save profile";
+  profileDialog.close();
+  render();
 }
 
 function renderTabs() {
