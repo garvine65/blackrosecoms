@@ -173,7 +173,44 @@ async function loadProfilesFromDB() {
   }
 }
 
+const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutes
+
+function updateActivity() {
+  if (activeProfileId) {
+    localStorage.setItem(sessionStorageKey + "-time", Date.now().toString());
+  }
+}
+
+// Listen for activity to reset the timer
+["mousemove", "mousedown", "keydown", "touchstart", "scroll"].forEach(evt => {
+  document.addEventListener(evt, updateActivity, { passive: true });
+});
+
+// Check every 30 seconds if we've been inactive for too long
+setInterval(() => {
+  if (activeProfileId) {
+    const lastActive = parseInt(localStorage.getItem(sessionStorageKey + "-time") || "0", 10);
+    if (Date.now() - lastActive > INACTIVITY_LIMIT_MS) {
+      console.log("[BlackRose] Auto-locking due to inactivity.");
+      showLogin();
+    }
+  }
+}, 30000);
+
 function showProfilePicker() {
+  const savedProfileId = localStorage.getItem(sessionStorageKey);
+  const lastActive = parseInt(localStorage.getItem(sessionStorageKey + "-time") || "0", 10);
+  
+  // If we have a saved profile and it hasn't been 15 minutes since last activity
+  if (savedProfileId && Date.now() - lastActive <= INACTIVITY_LIMIT_MS) {
+    console.log("[BlackRose] Restoring session for profile:", savedProfileId);
+    activateProfile(savedProfileId);
+    return;
+  }
+
+  // Otherwise, clear any stale session and show the picker
+  localStorage.removeItem(sessionStorageKey);
+  localStorage.removeItem(sessionStorageKey + "-time");
   document.getElementById("loginScreen").hidden = false;
   document.querySelector(".app-shell").classList.add("locked");
   renderLogin();
@@ -735,6 +772,9 @@ function selectProfile(profileId) {
 
 function activateProfile(profileId) {
   activeProfileId = profileId;
+  localStorage.setItem(sessionStorageKey, profileId);
+  localStorage.setItem(sessionStorageKey + "-time", Date.now().toString());
+  
   assignmentFilter = "all";
   activeView = "tasks";
   document.getElementById("loginScreen").hidden = true;
@@ -744,6 +784,9 @@ function activateProfile(profileId) {
 
 function showLogin() {
   activeProfileId = "";
+  localStorage.removeItem(sessionStorageKey);
+  localStorage.removeItem(sessionStorageKey + "-time");
+  
   assignmentFilter = "all";
   activeView = "tasks";
   // Return to profile picker (stay signed in to Supabase)
