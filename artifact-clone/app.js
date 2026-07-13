@@ -156,6 +156,10 @@ async function onSignedIn() {
   document.getElementById("authScreen").hidden = true;
   await loadProfilesFromDB();
   await loadPasswordsFromDB();
+  await loadTasksFromDB();
+  await loadMeetingsFromDB();
+  await loadUnwindMessagesFromDB();
+  await loadVibesFromDB();
   showProfilePicker();
 }
 
@@ -520,6 +524,22 @@ const defaultMeetings = [
     participants: ["mercy", "shadrack"]
   }
 ];
+
+async function loadMeetingsFromDB() {
+  const { data, error } = await supabase.from("meetings").select("*");
+  if (!error && data) {
+    meetings = data.map(m => ({
+      id: m.id,
+      title: m.title,
+      description: m.description || "",
+      date: m.date,
+      time: m.time.substring(0,5),
+      link: m.link || "",
+      organizer: m.organizer_id,
+      participants: m.participants || []
+    }));
+  }
+}
 
 function loadMeetings() {
   try {
@@ -1013,11 +1033,17 @@ function renderTaskRow(task, clientColumn) {
   </tr>`;
 }
 
-function handleAction(event) {
+async function handleAction(event) {
   const { action, id } = event.currentTarget.dataset;
   if (action === "edit") return openTaskDialog(tasks.find((task) => task.id === id));
   if (action === "comments") return openCommentsDialog(tasks.find((task) => task.id === id));
-  if (action === "delete") tasks = tasks.filter((task) => task.id !== id);
+  if (action === "delete") {
+    tasks = tasks.filter((task) => task.id !== id);
+    persistTasks();
+    render();
+    await supabase.from("tasks").delete().eq("id", id);
+    return;
+  }
   if (action === "complete") {
     const task = tasks.find((t) => t.id === id);
     if (task && task.repeat && (task.repeat === "monthly" || task.repeat === "weekly")) {
@@ -1026,12 +1052,20 @@ function handleAction(event) {
     updateTask(id, { status: "completed" });
   }
   if (action === "restore") updateTask(id, { status: "open" });
-  persistTasks();
-  render();
 }
 
-function updateTask(id, patch) {
+async function updateTask(id, patch) {
   tasks = tasks.map((task) => (task.id === id ? { ...task, ...patch } : task));
+  persistTasks();
+  render();
+
+  const dbPatch = {};
+  if (patch.status !== undefined) dbPatch.status = patch.status;
+  if (patch.checklist !== undefined) dbPatch.checklist = patch.checklist;
+  
+  if (Object.keys(dbPatch).length > 0) {
+    await supabase.from("tasks").update(dbPatch).eq("id", id);
+  }
 }
 
 function openTaskDialog(task) {
@@ -1057,7 +1091,7 @@ function openTaskDialog(task) {
   openModal(taskDialog);
 }
 
-function saveTask(event) {
+async function saveTask(event) {
   event.preventDefault();
   const id = document.querySelector("#taskId").value || createId();
   const existingTask = tasks.find((t) => t.id === id);
@@ -1081,6 +1115,27 @@ function saveTask(event) {
   persistTasks();
   taskDialog.close();
   render();
+
+  const dbTask = {
+    id: nextTask.id,
+    client: nextTask.client,
+    title: nextTask.title,
+    details: nextTask.details,
+    assigned_by: nextTask.assignedBy,
+    assigned_to: nextTask.assignedTo,
+    due_date: document.querySelector("#taskDate").value,
+    due_time: document.querySelector("#taskTime").value,
+    priority: nextTask.priority,
+    repeat: nextTask.repeat,
+    status: nextTask.status,
+    checklist: nextTask.checklist
+  };
+
+  if (existingTask) {
+    await supabase.from("tasks").update(dbTask).eq("id", id);
+  } else {
+    await supabase.from("tasks").insert([dbTask]);
+  }
 }
 
 
@@ -1121,6 +1176,32 @@ function loadProfiles() {
 
 function persistProfiles() {
   localStorage.setItem(profileStorageKey, JSON.stringify(profiles));
+}
+
+async function loadTasksFromDB() {
+  const { data, error } = await supabase.from("tasks").select("*, comments:task_comments(*)");
+  if (!error && data) {
+    tasks = data.map(t => ({
+      id: t.id,
+      client: t.client,
+      title: t.title,
+      details: t.details || "",
+      assignedBy: t.assigned_by,
+      assignedTo: t.assigned_to,
+      due: `${t.due_date}T${t.due_time.substring(0,5)}`,
+      priority: t.priority,
+      repeat: t.repeat || "",
+      status: t.status,
+      checklist: t.checklist || [],
+      comments: (t.comments || []).map(c => ({
+        id: c.id,
+        authorId: c.author_id,
+        text: c.text,
+        timestamp: c.created_at
+      })).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)),
+      source: ""
+    }));
+  }
 }
 
 function loadTasks() {
@@ -1260,7 +1341,7 @@ function formatMeetingTime(dateStr, timeStr) {
   return `${weekday} ${day} ${month} · ${time}`;
 }
 
-function handleMeetingAction(event) {
+async function handleMeetingAction(event) {
   const { meetingAction, id } = event.currentTarget.dataset;
   if (meetingAction === "edit") {
     return openMeetingDialog(meetings.find((m) => m.id === id));
@@ -1269,6 +1350,7 @@ function handleMeetingAction(event) {
     meetings = meetings.filter((m) => m.id !== id);
     persistMeetings();
     render();
+    await supabase.from("meetings").delete().eq("id", id);
   }
 }
 
@@ -1298,7 +1380,7 @@ function openMeetingDialog(meeting) {
   openModal(meetingDialog);
 }
 
-function saveMeeting(event) {
+async function saveMeeting(event) {
   event.preventDefault();
   const id = document.querySelector("#meetingId").value || createId();
   
@@ -1309,6 +1391,8 @@ function saveMeeting(event) {
     alert("Please select at least one participant.");
     return;
   }
+
+  const existingMeeting = meetings.find((m) => m.id === id);
 
   const nextMeeting = {
     id,
@@ -1328,6 +1412,23 @@ function saveMeeting(event) {
   persistMeetings();
   meetingDialog.close();
   render();
+
+  const dbMeeting = {
+    id: nextMeeting.id,
+    title: nextMeeting.title,
+    description: nextMeeting.description,
+    date: nextMeeting.date,
+    time: nextMeeting.time,
+    link: nextMeeting.link,
+    organizer_id: nextMeeting.organizer,
+    participants: nextMeeting.participants
+  };
+
+  if (existingMeeting) {
+    await supabase.from("meetings").update(dbMeeting).eq("id", id);
+  } else {
+    await supabase.from("meetings").insert([dbMeeting]);
+  }
 }
 
 function getNextOccurrenceDate(dateStr, repeat) {
@@ -1415,6 +1516,7 @@ function redrawChecklistEditor() {
   if (!container) return;
   container.innerHTML = _pendingChecklist.map((item, idx) => `
     <div class="checklist-editor-item">
+      <div class="checklist-editor-item">
       <input type="checkbox" ${item.done ? "checked" : ""} data-check-idx="${idx}" />
       <span>${escapeHtml(item.label)}</span>
       <button type="button" class="icon-button" data-remove-idx="${idx}" style="margin-left:auto;font-size:0.75rem;">x</button>
@@ -1472,21 +1574,29 @@ function renderComments(comments) {
   list.scrollTop = list.scrollHeight;
 }
 
-function postComment() {
+async function postComment() {
   const text = document.querySelector("#commentInput").value.trim();
   if (!text || !_activeCommentTaskId) return;
   const task = tasks.find(t => t.id === _activeCommentTaskId);
   if (!task) return;
   const comment = {
+    id: createId(),
     authorId: activeProfileId || profiles[0].id,
     text,
-    timestamp: new Date().toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" }),
+    timestamp: new Date().toISOString(),
   };
   const updated = [...(task.comments || []), comment];
-  updateTask(_activeCommentTaskId, { comments: updated });
+  task.comments = updated;
   persistTasks();
   document.querySelector("#commentInput").value = "";
   renderComments(updated);
+
+  await supabase.from("task_comments").insert([{
+    id: comment.id,
+    task_id: _activeCommentTaskId,
+    author_id: comment.authorId,
+    text: comment.text
+  }]);
 }
 
 // ── Feature 4: Client Dashboard ───────────────────────────────────────────────
@@ -1701,24 +1811,45 @@ const SEED_MESSAGES = [
 let _unwindInitialized = false;
 
 // ── Storage ─────────────────────────────────────────────────
+let unwindMessages = [];
+let vibeVotes = {};
+
+async function loadUnwindMessagesFromDB() {
+  const { data, error } = await supabase.from("chat_messages").select("*").order("created_at", { ascending: true });
+  if (!error && data) {
+    unwindMessages = data.map(m => ({
+      id: m.id,
+      authorId: m.author_id,
+      type: m.type,
+      content: m.content,
+      timestamp: new Date(m.created_at).toLocaleString("en-KE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }),
+      reactions: m.reactions || {}
+    }));
+  }
+}
+
 function loadUnwindMessages() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(UNWIND_STORAGE_KEY) || "[]");
-    return saved.length ? saved : [...SEED_MESSAGES];
-  } catch { return [...SEED_MESSAGES]; }
+  return unwindMessages;
 }
 
 function persistUnwindMessages(msgs) {
-  localStorage.setItem(UNWIND_STORAGE_KEY, JSON.stringify(msgs));
+  unwindMessages = msgs;
+}
+
+async function loadVibesFromDB() {
+  const { data, error } = await supabase.from("vibe_votes").select("*");
+  if (!error && data) {
+    vibeVotes = {};
+    data.forEach(v => { vibeVotes[v.profile_id] = v.vibe; });
+  }
 }
 
 function loadVibeVotes() {
-  try { return JSON.parse(localStorage.getItem(VIBE_STORAGE_KEY) || "{}"); }
-  catch { return {}; }
+  return vibeVotes;
 }
 
 function persistVibeVotes(votes) {
-  localStorage.setItem(VIBE_STORAGE_KEY, JSON.stringify(votes));
+  vibeVotes = votes;
 }
 
 // ── Rankings algorithm ───────────────────────────────────────
@@ -1865,18 +1996,18 @@ function renderChatMessages() {
   container.scrollTop = container.scrollHeight;
 }
 
-function toggleReaction(msgId, emoji) {
+async function toggleReaction(msgId, emoji) {
   if (!activeProfileId) return;
-  const msgs = loadUnwindMessages();
-  const msg = msgs.find(m => m.id === msgId);
+  const msg = unwindMessages.find(m => m.id === msgId);
   if (!msg) return;
   if (!msg.reactions) msg.reactions = {};
   if (!msg.reactions[emoji]) msg.reactions[emoji] = [];
   const idx = msg.reactions[emoji].indexOf(activeProfileId);
   if (idx === -1) { msg.reactions[emoji].push(activeProfileId); }
   else            { msg.reactions[emoji].splice(idx, 1); }
-  persistUnwindMessages(msgs);
   renderChatMessages();
+
+  await supabase.from("chat_messages").update({ reactions: msg.reactions }).eq("id", msgId);
 }
 
 function openReactionPicker(anchorBtn) {
@@ -1911,21 +2042,28 @@ function openReactionPicker(anchorBtn) {
   setTimeout(() => document.addEventListener("click", close), 0);
 }
 
-function postUnwindMessage(type, content) {
+async function postUnwindMessage(type, content) {
   if (!content || !content.toString().trim()) return;
-  const msgs = loadUnwindMessages();
   const now = new Date();
   const ts = now.toLocaleString("en-KE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
-  msgs.push({
+  const msg = {
     id: createId(),
     authorId: activeProfileId || profiles[0].id,
     type,
     content: content.toString().trim(),
     timestamp: ts,
     reactions: {}
-  });
-  persistUnwindMessages(msgs);
+  };
+  unwindMessages.push(msg);
   renderChatMessages();
+
+  await supabase.from("chat_messages").insert([{
+    id: msg.id,
+    author_id: msg.authorId,
+    type: msg.type,
+    content: msg.content,
+    reactions: msg.reactions
+  }]);
 }
 
 // ── Sticker / GIF pickers ────────────────────────────────────
@@ -2080,10 +2218,13 @@ function renderUnwind() {
   document.querySelectorAll(".vibe-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       if (!activeProfileId) { showUnwindToast("Log in to cast your vibe!"); return; }
-      const votes = loadVibeVotes();
-      votes[activeProfileId] = btn.dataset.vibe;
-      persistVibeVotes(votes);
+      vibeVotes[activeProfileId] = btn.dataset.vibe;
       renderVibePoll();
+      
+      supabase.from("vibe_votes").upsert({
+        profile_id: activeProfileId,
+        vibe: btn.dataset.vibe
+      }).then(() => {});
     });
   });
 }
