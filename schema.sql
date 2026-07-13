@@ -16,7 +16,7 @@ create table public.profiles (
 -- Enable RLS
 alter table public.profiles enable row level security;
 create policy "Allow authenticated users to read profiles" on public.profiles for select to authenticated using (true);
-create policy "Allow authenticated users to update their own profile" on public.profiles for update to authenticated using (auth.email() = email);
+create policy "Allow authenticated users to update any profile" on public.profiles for update to authenticated using (true);
 
 -- Seed default profiles (change emails to match actual user accounts later)
 insert into public.profiles (id, name, details, image_url, email, approved) values
