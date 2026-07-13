@@ -155,6 +155,7 @@ async function onSignedIn() {
   _currentUserProfile = profile;
   document.getElementById("authScreen").hidden = true;
   await loadProfilesFromDB();
+  await loadPasswordsFromDB();
   showProfilePicker();
 }
 
@@ -469,6 +470,19 @@ function openModal(dialog) {
   });
 }
 
+
+async function loadPasswordsFromDB() {
+  const { data, error } = await supabase.from("passwords").select("*");
+  if (!error && data) {
+    passwords = data.map(p => ({
+      id: p.id,
+      category: p.category,
+      client: p.client,
+      username: p.username,
+      password: p.password
+    }));
+  }
+}
 
 function loadPasswords() {
   try {
@@ -2127,7 +2141,7 @@ function initPasswordFilters() {
   });
 }
 
-function handlePasswordInput(e) {
+async function handlePasswordInput(e) {
   const row = e.target.closest("tr");
   if (!row) return;
   const id = row.dataset.id;
@@ -2136,16 +2150,18 @@ function handlePasswordInput(e) {
   if (item) {
     item[field] = e.target.value;
     persistPasswords();
+    await supabase.from("passwords").update({ [field]: e.target.value }).eq("id", id);
   }
 }
 
-function deletePasswordRow(id) {
+async function deletePasswordRow(id) {
   passwords = passwords.filter(p => p.id !== id);
   persistPasswords();
   renderPasswords();
+  await supabase.from("passwords").delete().eq("id", id);
 }
 
-function addPasswordRow() {
+async function addPasswordRow() {
   const newRow = {
     id: createId(),
     category: activePasswordCategory,
@@ -2156,6 +2172,14 @@ function addPasswordRow() {
   passwords.push(newRow);
   persistPasswords();
   renderPasswords();
+  
+  await supabase.from("passwords").insert([{
+    id: newRow.id,
+    category: newRow.category,
+    client: newRow.client,
+    username: newRow.username,
+    password: newRow.password
+  }]);
 }
 
 function renderPasswords() {
@@ -2209,7 +2233,7 @@ function renderPasswords() {
   }).join("");
 
   container.querySelectorAll("input").forEach(input => {
-    input.addEventListener("input", handlePasswordInput);
+    input.addEventListener("change", handlePasswordInput);
   });
 
   container.querySelectorAll(".password-toggle-btn").forEach(btn => {
