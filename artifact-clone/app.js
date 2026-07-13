@@ -1,3 +1,7 @@
+// Wrap everything in an IIFE so our `const supabase` doesn't clash
+// with the global `supabase` namespace set by the CDN script.
+(function () {
+"use strict";
 // ═══════════════════════════════════════════════════════════════════
 //  SUPABASE CLIENT  (credentials come from supabase-config.js)
 // ═══════════════════════════════════════════════════════════════════
@@ -2234,3 +2238,5 @@ document.querySelector("#addPasswordRowBtn").addEventListener("click", addPasswo
 setupAuthForm();
 setupPinDialog();
 initAuth(); // async - shows auth screen or profile picker based on session
+
+})(); // end IIFE
