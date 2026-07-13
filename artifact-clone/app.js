@@ -492,6 +492,11 @@ if (savedTasks.length) tasks = savedTasks;
 // Migration: split old combined "Ultimate & ADH" client into "Ultimate"
 // (Users can manually reassign existing tasks to ADH if needed)
 tasks = tasks.map(t => t.client === "Ultimate & ADH" ? { ...t, client: "Ultimate" } : t);
+
+// Migration: purge all auto-generated KRA tasks from localStorage
+tasks = tasks.filter(t => t.source !== "kra");
+persistTasks(); // Save the cleaned list back to the browser immediately
+
 tasks = tasks.map(normalizeTask);
 
 
@@ -1461,12 +1466,7 @@ function renderWorkload() {
 }
 
 // ── Feature 5: KRA/iTax Statutory Calendar ────────────────────────────────────
-const kraCalendar = [
-  { title: "VAT Return Filing", day: 20, client: "BRC Consultancy", details: "File monthly VAT return on iTax before the 20th. Prepare and review before submission.", assignTo: "shadrack" },
-  { title: "PAYE Filing", day: 9, client: "BRC Consultancy", details: "File monthly PAYE returns on iTax and remit by the 9th of the month.", assignTo: "shadrack" },
-  { title: "Withholding Tax Filing", day: 20, client: "BRC Consultancy", details: "File withholding tax certificates and remit by the 20th.", assignTo: "mercy" },
-  { title: "Corporate Income Tax Instalment", day: 20, client: "BRC Consultancy", details: "Quarterly instalment tax (4th month, 6th month, 9th month, 12th month).", assignTo: "mercy" },
-];
+const kraCalendar = [];
 
 function injectStatutoryDeadlines() {
   const now = new Date();
