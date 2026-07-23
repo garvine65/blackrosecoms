@@ -11,7 +11,8 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 //  CONSTANTS & DEFAULTS
 // ═══════════════════════════════════════════════════════════════════
 const clients = ["All clients", "AMM Law", "BRC Consultancy", "Briq Consultancy", "Multiplier", "Ultimate", "ADH"];
-const today = new Date();
+let today = new Date();
+let timeOffset = 0;
 const storageKey = "gregu-client-tasks";
 const profileStorageKey = "blackrose-profiles";
 const sessionStorageKey = "blackrose-active-profile";
@@ -52,6 +53,7 @@ let _pendingPinProfileId = null;
 // ═══════════════════════════════════════════════════════════════════
 async function initAuth() {
   console.log('[BlackRose Auth] initAuth() starting...');
+  syncTimeOffset(); // Sync time asynchronously so it doesn't block auth loading
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.user) {
     console.log('[BlackRose Auth] Existing session found for:', session.user.email);
@@ -597,7 +599,41 @@ const recurrenceDialog = document.querySelector("#recurrenceDialog");
 const recurrenceForm = document.querySelector("#recurrenceForm");
 const commentsDialog = document.querySelector("#commentsDialog");
 
-document.querySelector("#todayLabel").textContent = "Friday, 10 July 2026";
+async function syncTimeOffset() {
+  try {
+    const start = performance.now();
+    const resp = await fetch(window.location.pathname, { method: "HEAD", cache: "no-store" });
+    const dateHeader = resp.headers.get("Date");
+    if (dateHeader) {
+      const serverTime = new Date(dateHeader);
+      const rtt = performance.now() - start;
+      const adjustedServerTime = new Date(serverTime.getTime() + rtt / 2);
+      timeOffset = adjustedServerTime.getTime() - Date.now();
+      console.log(`[TimeSync] Server time: ${adjustedServerTime.toISOString()}, local offset: ${timeOffset}ms`);
+      today = getCurrentTime();
+      if (typeof render === "function") {
+        updateClock();
+        render();
+      }
+    }
+  } catch (e) {
+    console.warn("[TimeSync] Failed to sync time with server, falling back to local PC clock.", e);
+  }
+}
+
+function updateClock() {
+  today = getCurrentTime();
+  const options = { weekday: "long", day: "numeric", month: "long", year: "numeric" };
+  const dateStr = today.toLocaleDateString("en-GB", options);
+  const timeStr = today.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  const label = document.querySelector("#todayLabel");
+  if (label) {
+    label.textContent = `${dateStr} · ${timeStr}`;
+  }
+}
+updateClock();
+setInterval(updateClock, 1000);
+
 document.querySelector("#newTaskButton").addEventListener("click", () => openTaskDialog());
 document.querySelector("#newMeetingButton").addEventListener("click", () => openMeetingDialog());
 document.querySelector("#meetingsScheduleBtn").addEventListener("click", () => openMeetingDialog());
@@ -1157,6 +1193,10 @@ function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+function getCurrentTime() {
+  return new Date(Date.now() + timeOffset);
+}
+
 function escapeHtml(value) {
   return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]);
 }
@@ -1490,12 +1530,13 @@ function skipRecurrence() {
   render();
 }
 
-// ── Feature 3: Countdown Badges ──────────────────────────────────────────────
 function getCountdownLabel(dueStr) {
   const due = new Date(dueStr);
-  const now = new Date();
-  const diffMs = due - now;
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const now = getCurrentTime();
+  const dueStart = startOfDay(due);
+  const nowStart = startOfDay(now);
+  const diffMs = dueStart - nowStart;
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
   if (diffDays < 0) return { label: `Overdue ${Math.abs(diffDays)}d`, cls: "countdown-overdue" };
   if (diffDays === 0) return { label: "Due today", cls: "countdown-today" };
   if (diffDays === 1) return { label: "Tomorrow", cls: "countdown-soon" };
@@ -1583,7 +1624,7 @@ async function postComment() {
     id: createId(),
     authorId: activeProfileId || profiles[0].id,
     text,
-    timestamp: new Date().toISOString(),
+    timestamp: getCurrentTime().toISOString(),
   };
   const updated = [...(task.comments || []), comment];
   task.comments = updated;
@@ -1680,7 +1721,7 @@ const kraCalendar = [
 ];
 
 function injectStatutoryDeadlines() {
-  const now = new Date();
+  const now = getCurrentTime();
   const yr = now.getFullYear();
   const mo = now.getMonth();
   let changed = false;
@@ -1733,7 +1774,7 @@ function closeExportPanel() {
 }
 
 function generateSummaryText() {
-  const now = new Date().toLocaleDateString("en-KE", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const now = getCurrentTime().toLocaleDateString("en-KE", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const clientList = clients.filter(c => c !== "All clients");
   let out = `BLACK ROSE CONSULTANCY — TASK SUMMARY\n${now}\n${"═".repeat(45)}\n\n`;
 
@@ -2044,7 +2085,7 @@ function openReactionPicker(anchorBtn) {
 
 async function postUnwindMessage(type, content) {
   if (!content || !content.toString().trim()) return;
-  const now = new Date();
+  const now = getCurrentTime();
   const ts = now.toLocaleString("en-KE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
   const msg = {
     id: createId(),
@@ -2136,7 +2177,8 @@ function showUnwindToast(text) {
 // ── Main renderUnwind ─────────────────────────────────────────
 function renderUnwind() {
   // Quote of the day (deterministic by day-of-year)
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const now = getCurrentTime();
+  const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000);
   document.querySelector("#unwindQuote").innerHTML =
     `<em>${UNWIND_QUOTES[dayOfYear % UNWIND_QUOTES.length]}</em>`;
 
