@@ -9,6 +9,7 @@ create table public.profiles (
   image_url text,
   pin_hash text, -- SHA-256 hash of the 4-digit PIN
   email text unique, -- links to Supabase auth.users.email
+  phone text, -- WhatsApp phone number
   approved boolean default false,
   created_at timestamptz default now()
 );

@@ -17,12 +17,12 @@ const storageKey = "gregu-client-tasks";
 const profileStorageKey = "blackrose-profiles";
 const sessionStorageKey = "blackrose-active-profile";
 const defaultProfiles = [
-  { id: "diane-marie", name: "Diane Meria", details: "Black Rose team member", image: "./assets/diane marie.jpeg" },
-  { id: "greg", name: "Gregory Nyataige", details: "Black Rose team member", image: "./assets/greg.jpeg" },
-  { id: "mercy", name: "Mercy Waweru", details: "Black Rose team member", image: "./assets/mercy.jpeg" },
-  { id: "wangui-muchiri", name: "Wangui Muchiri", details: "Black Rose team member", image: "./assets/wangui muchiri.jpeg" },
-  { id: "shadrack", name: "Shadrack Kojack", details: "Black Rose team member", image: "./assets/Shadrack.jpeg" },
-  { id: "carol-nduta", name: "Profile 6", details: "Vacant Profile", image: "" },
+  { id: "diane-marie", name: "Diane Meria", details: "Black Rose team member", image: "./assets/diane marie.jpeg", phone: "" },
+  { id: "greg", name: "Gregory Nyataige", details: "Black Rose team member", image: "./assets/greg.jpeg", phone: "" },
+  { id: "mercy", name: "Mercy Waweru", details: "Black Rose team member", image: "./assets/mercy.jpeg", phone: "" },
+  { id: "wangui-muchiri", name: "Wangui Muchiri", details: "Black Rose team member", image: "./assets/wangui muchiri.jpeg", phone: "" },
+  { id: "shadrack", name: "Shadrack Kojack", details: "Black Rose team member", image: "./assets/Shadrack.jpeg", phone: "" },
+  { id: "carol-nduta", name: "Profile 6", details: "Vacant Profile", image: "", phone: "" },
 ];
 
 let selectedClient = "All clients";
@@ -176,6 +176,7 @@ async function loadProfilesFromDB() {
       email: p.email,
       approved: p.approved,
       pin_hash: p.pin_hash || null,
+      phone: p.phone || "",
     }));
   }
 }
@@ -869,6 +870,7 @@ function openProfileDialog(profile) {
   document.querySelector("#profileId").value = profile.id;
   document.querySelector("#profileName").value = profile.name;
   document.querySelector("#profileDetails").value = profile.details;
+  document.querySelector("#profilePhone").value = profile.phone || "";
   document.querySelector("#profileImage").value = "";
   openModal(profileDialog);
 }
@@ -883,6 +885,7 @@ async function saveProfile(event) {
     ...profiles.find((profile) => profile.id === id),
     name: document.querySelector("#profileName").value,
     details: document.querySelector("#profileDetails").value,
+    phone: document.querySelector("#profilePhone").value,
   };
 
   saveBtn.disabled = true;
@@ -919,6 +922,7 @@ async function saveProfile(event) {
   const updatePayload = {
     name: nextProfile.name,
     details: nextProfile.details,
+    phone: nextProfile.phone,
   };
   if (nextProfile.image_url) updatePayload.image_url = nextProfile.image_url;
 
@@ -1171,6 +1175,36 @@ async function saveTask(event) {
     await supabase.from("tasks").update(dbTask).eq("id", id);
   } else {
     await supabase.from("tasks").insert([dbTask]);
+  }
+
+  // Trigger WhatsApp notification prompt only for NEW tasks assigned to someone else
+  const isNewTask = !existingTask;
+  const isAssignedToOther = nextTask.assignedTo !== activeProfileId;
+  if (isNewTask && isAssignedToOther && nextTask.status === "open") {
+    const assignee = getProfile(nextTask.assignedTo);
+    if (assignee && assignee.phone) {
+      setTimeout(() => {
+        const shouldNotify = confirm(`\ud83d\udce8 Send a WhatsApp task alert to ${assignee.name}?`);
+        if (shouldNotify) {
+          const priorityIcon = nextTask.priority === "urgent" ? "\ud83d\udd34 URGENT\n" : "";
+          const message =
+            `\ud83d\udd14 *Task Alert — Black Rose Tracker*\n` +
+            `${priorityIcon}\n` +
+            `*You have been assigned a task:*\n` +
+            `*Task:* ${nextTask.title}\n` +
+            `*Client:* ${nextTask.client}\n` +
+            `*Due:* ${formatDue(nextTask.due)}\n` +
+            (nextTask.details ? `*Details:* ${nextTask.details}\n` : "") +
+            `\n\ud83d\udd17 Open the app to view & complete it: ${window.location.origin}/`;
+
+          let phoneNum = assignee.phone.trim().replace(/[\s\-()]/g, "");
+          if (!phoneNum.startsWith("+") && phoneNum.length === 9)  phoneNum = `+254${phoneNum}`;
+          else if (!phoneNum.startsWith("+") && phoneNum.startsWith("0")) phoneNum = `+254${phoneNum.substring(1)}`;
+
+          window.open(`https://wa.me/${phoneNum}?text=${encodeURIComponent(message)}`, "_blank");
+        }
+      }, 200);
+    }
   }
 }
 
