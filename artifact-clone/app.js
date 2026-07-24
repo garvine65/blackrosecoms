@@ -1177,35 +1177,99 @@ async function saveTask(event) {
     await supabase.from("tasks").insert([dbTask]);
   }
 
-  // Trigger WhatsApp notification prompt only for NEW tasks assigned to someone else
+  // Trigger WhatsApp notification for NEW tasks assigned to someone else
   const isNewTask = !existingTask;
   const isAssignedToOther = nextTask.assignedTo !== activeProfileId;
   if (isNewTask && isAssignedToOther && nextTask.status === "open") {
     const assignee = getProfile(nextTask.assignedTo);
     if (assignee && assignee.phone) {
-      setTimeout(() => {
-        const shouldNotify = confirm(`\ud83d\udce8 Send a WhatsApp task alert to ${assignee.name}?`);
-        if (shouldNotify) {
-          const priorityIcon = nextTask.priority === "urgent" ? "\ud83d\udd34 URGENT\n" : "";
-          const message =
-            `\ud83d\udd14 *Task Alert — Black Rose Tracker*\n` +
-            `${priorityIcon}\n` +
-            `*You have been assigned a task:*\n` +
-            `*Task:* ${nextTask.title}\n` +
-            `*Client:* ${nextTask.client}\n` +
-            `*Due:* ${formatDue(nextTask.due)}\n` +
-            (nextTask.details ? `*Details:* ${nextTask.details}\n` : "") +
-            `\n\ud83d\udd17 Open the app to view & complete it: ${window.location.origin}/`;
-
-          let phoneNum = assignee.phone.trim().replace(/[\s\-()]/g, "");
-          if (!phoneNum.startsWith("+") && phoneNum.length === 9)  phoneNum = `+254${phoneNum}`;
-          else if (!phoneNum.startsWith("+") && phoneNum.startsWith("0")) phoneNum = `+254${phoneNum.substring(1)}`;
-
-          window.open(`https://wa.me/${phoneNum}?text=${encodeURIComponent(message)}`, "_blank");
-        }
-      }, 200);
+      // Show a styled in-page prompt instead of browser confirm()
+      showWhatsAppPrompt(assignee, nextTask);
     }
   }
+}
+
+
+
+// ── WhatsApp Notification Prompt ──────────────────────────────────────────────
+function showWhatsAppPrompt(assignee, task) {
+  // Build the WhatsApp message
+  const priorityIcon = task.priority === "urgent" ? "🔴 URGENT\n" : "";
+  const message =
+    `🔔 *Task Alert — Black Rose Tracker*\n` +
+    `${priorityIcon}\n` +
+    `*You have been assigned a task:*\n` +
+    `*Task:* ${task.title}\n` +
+    `*Client:* ${task.client}\n` +
+    `*Due:* ${formatDue(task.due)}\n` +
+    (task.details ? `*Details:* ${task.details}\n` : "") +
+    `\n🔗 Open the app to view & complete it: ${window.location.origin}/`;
+
+  // Normalise phone number
+  let phoneNum = assignee.phone.trim().replace(/[\s\-()]/g, "");
+  if (!phoneNum.startsWith("+") && phoneNum.length === 9) phoneNum = `+254${phoneNum}`;
+  else if (!phoneNum.startsWith("+") && phoneNum.startsWith("0")) phoneNum = `+254${phoneNum.substring(1)}`;
+
+  const waUrl = `https://wa.me/${phoneNum.replace("+", "")}?text=${encodeURIComponent(message)}`;
+
+  // Create in-page overlay prompt
+  const overlay = document.createElement("div");
+  overlay.id = "whatsapp-prompt-overlay";
+  overlay.style.cssText = `
+    position: fixed; inset: 0; z-index: 99999;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.2s ease;
+  `;
+
+  overlay.innerHTML = `
+    <div style="
+      background: #fff; border-radius: 16px; padding: 28px 24px;
+      max-width: 380px; width: 90%; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      font-family: 'Outfit', sans-serif;
+    ">
+      <div style="font-size: 40px; margin-bottom: 12px;">💬</div>
+      <h3 style="margin: 0 0 8px; font-size: 18px; color: #1a1a2e;">
+        Notify ${assignee.name}?
+      </h3>
+      <p style="margin: 0 0 20px; font-size: 14px; color: #555; line-height: 1.5;">
+        Send a WhatsApp message with the task details so they know what to do.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button id="wa-skip-btn" style="
+          flex: 1; padding: 12px 16px; border-radius: 10px;
+          border: 1.5px solid #ddd; background: #f5f5f5;
+          font-size: 14px; font-weight: 600; color: #555;
+          cursor: pointer; transition: all 0.2s;
+        ">Skip</button>
+        <a href="${waUrl}" id="wa-send-btn" style="
+          flex: 1; padding: 12px 16px; border-radius: 10px;
+          border: none; background: #25D366; color: #fff;
+          font-size: 14px; font-weight: 600; text-decoration: none;
+          cursor: pointer; transition: all 0.2s;
+          display: flex; align-items: center; justify-content: center; gap: 6px;
+        ">Send ✉️</a>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // Skip button — just close the prompt
+  document.getElementById("wa-skip-btn").addEventListener("click", () => {
+    overlay.remove();
+  });
+
+  // Send button — the <a> tag handles navigation naturally, then clean up
+  document.getElementById("wa-send-btn").addEventListener("click", () => {
+    setTimeout(() => overlay.remove(), 300);
+  });
+
+  // Also close on clicking the dark background
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) overlay.remove();
+  });
 }
 
 
