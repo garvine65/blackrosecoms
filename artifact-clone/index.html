@@ -6,6 +6,13 @@
     <title>Black Rose Consultancy - Client Task Tracker</title>
     <meta name="description" content="Black Rose Consultancy internal client task & deadline tracker. Secure, team-only access." />
     <link rel="stylesheet" href="./styles.css" />
+    <!-- Prevent flash of wrong theme -->
+    <script>
+      (function () {
+        const saved = localStorage.getItem('br-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', saved);
+      })();
+    </script>
     <!-- Supabase client library (must load before app scripts) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
@@ -17,7 +24,7 @@
       <div class="auth-watermark" aria-hidden="true"></div>
       <div class="auth-panel">
         <header class="auth-header">
-          <img src="./assets/logo.jpeg" alt="Black Rose Consultancy" class="auth-logo" />
+          <img src="./assets/logo.jpeg" alt="Black Rose Consultancy" class="auth-logo" data-logo />
           <h1>Black Rose Consultancy</h1>
           <p class="auth-subtitle">Internal team portal — authorised access only</p>
         </header>
@@ -70,7 +77,7 @@
       <div class="login-watermark" aria-hidden="true"></div>
       <div class="login-panel">
         <header class="login-header">
-          <img src="./assets/logo.jpeg" alt="Black Rose Consulting" />
+          <img src="./assets/logo.jpeg" alt="Black Rose Consulting" data-logo />
           <div>
             <h1>Black Rose Consultancy</h1>
             <p id="profileSelectSubtitle">Select your profile to continue</p>
@@ -94,7 +101,10 @@
         <div class="session-info">
           <span id="currentProfileLabel"></span>
           <time id="todayLabel"></time>
-          <button class="outline-button compact-button" id="switchProfileButton">Switch profile</button>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <button class="outline-button compact-button" id="switchProfileButton">Switch profile</button>
+            <button class="theme-toggle" id="themeToggleBtn" title="Toggle dark / light mode" aria-label="Toggle theme">🌙</button>
+          </div>
         </div>
       </header>
 
@@ -557,5 +567,34 @@
 
     <script src="./supabase-config.js"></script>
     <script src="./app.js"></script>
+    <!-- Theme toggle logic -->
+    <script>
+      (function () {
+        function getTheme() {
+          return localStorage.getItem('br-theme') || 'light';
+        }
+        function setTheme(t) {
+          document.documentElement.setAttribute('data-theme', t);
+          localStorage.setItem('br-theme', t);
+          const btn = document.getElementById('themeToggleBtn');
+          if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
+          // Swap logos that reference ./assets/logo.jpeg to darkmode.png in dark
+          document.querySelectorAll('img[data-logo]').forEach(function (img) {
+            img.src = t === 'dark' ? './assets/darkmode.png' : './assets/logo.jpeg';
+          });
+        }
+        // Apply saved theme and swap logos on load
+        const saved = getTheme();
+        setTheme(saved);
+
+        const btn = document.getElementById('themeToggleBtn');
+        if (btn) {
+          btn.addEventListener('click', function () {
+            const current = getTheme();
+            setTheme(current === 'dark' ? 'light' : 'dark');
+          });
+        }
+      })();
+    </script>
   </body>
 </html>

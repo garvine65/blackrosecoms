@@ -1,4 +1,9 @@
+/* ═══════════════════════════════════════════════════════════
+   THEME SYSTEM — light (default) + dark-gold mode
+   ═══════════════════════════════════════════════════════════ */
+
 :root {
+  /* Brand palette */
   --ink: #14233b;
   --muted: #897f73;
   --paper: #f8f6f0;
@@ -11,7 +16,101 @@
   --green: #2f7b58;
   --green-soft: #e6f4ec;
   --white: #fffdf9;
+
+  /* Semantic theme tokens (light values) */
+  --bg-body: #14110e;
+  --bg-app: #f8f6f0;
+  --bg-surface: rgba(255, 253, 249, 0.56);
+  --bg-panel: rgba(255, 253, 249, 0.48);
+  --bg-input: rgba(255, 255, 255, 0.72);
+  --bg-card: rgba(255, 253, 249, 0.48);
+  --bg-dialog: rgba(255, 253, 249, 0.78);
+  --bg-toggle: rgba(228, 222, 211, 0.4);
+  --bg-header: rgba(248, 246, 240, 0.58);
+  --bg-tab-active: var(--navy);
+  --border-surface: rgba(228, 222, 211, 0.72);
+  --border-input: rgba(228, 222, 211, 0.74);
+  --text-on-primary: #ffffff;
+  --primary: var(--navy);
+  --primary-soft: rgba(20, 35, 59, 0.1);
+  --accent: var(--amber);
+  --logo-src: url("./assets/logo.jpeg");
+
   font-family: Georgia, "Times New Roman", serif;
+  color-scheme: light;
+}
+
+/* ── Dark-gold theme ───────────────────────────────────── */
+[data-theme="dark"] {
+  --ink: #f0e8d6;
+  --muted: #9a8e7a;
+  --paper: #1a1710;
+  --line: rgba(201, 149, 42, 0.18);
+  --navy: #c9952a;         /* gold replaces navy as primary */
+  --red: #e06060;
+  --red-soft: rgba(224, 96, 96, 0.12);
+  --amber: #e5b842;
+  --amber-soft: rgba(229, 184, 66, 0.12);
+  --green: #4cad7a;
+  --green-soft: rgba(76, 173, 122, 0.12);
+  --white: #1e1c16;
+
+  --bg-body: #0d0d0b;
+  --bg-app: #111008;
+  --bg-surface: rgba(30, 28, 22, 0.82);
+  --bg-panel: rgba(26, 23, 16, 0.90);
+  --bg-input: rgba(255, 255, 255, 0.055);
+  --bg-card: rgba(26, 23, 16, 0.85);
+  --bg-dialog: #1a1710;
+  --bg-toggle: rgba(201, 149, 42, 0.1);
+  --bg-header: rgba(26, 23, 16, 0.75);
+  --bg-tab-active: #c9952a;
+  --border-surface: rgba(201, 149, 42, 0.22);
+  --border-input: rgba(201, 149, 42, 0.25);
+  --text-on-primary: #0d0d0b;
+  --primary: #c9952a;
+  --primary-soft: rgba(201, 149, 42, 0.12);
+  --accent: #e5b842;
+  --logo-src: url("./assets/darkmode.png");
+
+  color-scheme: dark;
+}
+
+/* ── Theme toggle button ───────────────────────────────── */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: var(--bg-surface);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-toggle:hover {
+  border-color: var(--navy);
+  background: var(--primary-soft);
+  transform: rotate(20deg) scale(1.08);
+  box-shadow: 0 4px 14px rgba(201, 149, 42, 0.25);
+}
+
+[data-theme="dark"] .theme-toggle {
+  border-color: rgba(201, 149, 42, 0.4);
+  background: rgba(201, 149, 42, 0.08);
+  box-shadow: 0 0 0 1px rgba(201, 149, 42, 0.15) inset;
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+  background: rgba(201, 149, 42, 0.18);
+  box-shadow: 0 4px 14px rgba(201, 149, 42, 0.3);
 }
 
 * {
@@ -20,8 +119,9 @@
 
 body {
   margin: 0;
-  background: #14110e;
+  background: var(--bg-body);
   color: var(--ink);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 button,
@@ -40,10 +140,22 @@ button {
   isolation: isolate;
   min-height: 100vh;
   overflow: hidden;
+  background: var(--bg-app);
+  transition: background 0.3s ease;
+}
+
+/* Light mode gradient overlay */
+:root:not([data-theme="dark"]) .app-shell {
   background:
     linear-gradient(rgba(248, 246, 240, 0.86), rgba(248, 246, 240, 0.9)),
     radial-gradient(circle at 47% 18%, rgba(255, 255, 255, 0.88), transparent 32rem),
     var(--paper);
+}
+
+/* Dark mode gradient overlay */
+[data-theme="dark"] .app-shell {
+  background:
+    linear-gradient(160deg, #0d0e08 0%, #111008 60%, #0d0e08 100%);
 }
 
 .app-shell.locked {
@@ -58,10 +170,20 @@ button {
   place-items: center;
   padding: 2rem;
   overflow: hidden;
+  background: var(--bg-app);
+  transition: background 0.3s ease;
+}
+
+:root:not([data-theme="dark"]) .login-screen {
   background:
     linear-gradient(rgba(248, 246, 240, 0.6), rgba(248, 246, 240, 0.7)),
     radial-gradient(circle at 50% 28%, rgba(255, 255, 255, 0.72), transparent 28rem),
     var(--paper);
+}
+
+[data-theme="dark"] .login-screen {
+  background:
+    linear-gradient(160deg, #0d0e08 0%, #111008 60%, #0d0e08 100%);
 }
 
 .login-screen[hidden] {
@@ -73,7 +195,7 @@ button {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image: url("./assets/logo.jpeg");
+  background-image: var(--logo-src);
   background-repeat: no-repeat;
   background-position: center 44%;
   background-size: min(82vw, 980px) auto;
@@ -82,14 +204,25 @@ button {
   mix-blend-mode: multiply;
 }
 
+[data-theme="dark"] .login-watermark {
+  mix-blend-mode: screen;
+  opacity: 0.15;
+  filter: none;
+}
+
 .login-panel {
   width: min(1120px, 100%);
-  border: 1px solid rgba(228, 222, 211, 0.64);
+  border: 1px solid var(--border-surface);
   border-radius: 8px;
   padding: 1.5rem;
-  background: rgba(255, 253, 249, 0.48);
+  background: var(--bg-panel);
   box-shadow: 0 28px 80px rgba(31, 25, 18, 0.18);
   backdrop-filter: blur(2px);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+[data-theme="dark"] .login-panel {
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(201, 149, 42, 0.1) inset;
 }
 
 .login-header {
@@ -97,7 +230,7 @@ button {
   align-items: center;
   gap: 1rem;
   padding-bottom: 1.25rem;
-  border-bottom: 2px solid rgba(20, 35, 59, 0.72);
+  border-bottom: 2px solid var(--primary);
 }
 
 .login-header img {
@@ -133,14 +266,19 @@ button {
   gap: 1rem;
   align-items: center;
   min-height: 9rem;
-  border: 1px solid rgba(228, 222, 211, 0.72);
+  border: 1px solid var(--border-surface);
   border-radius: 8px;
   padding: 1rem;
-  background: rgba(255, 253, 249, 0.56);
+  background: var(--bg-surface);
   box-shadow: 0 14px 34px rgba(58, 48, 36, 0.08);
   text-align: left;
   color: var(--ink);
   overflow: hidden;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+[data-theme="dark"] .profile-card {
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
 }
 
 .profile-card::before {
@@ -152,8 +290,12 @@ button {
 }
 
 .profile-card:hover {
-  border-color: rgba(20, 35, 59, 0.48);
+  border-color: var(--navy);
   box-shadow: 0 18px 42px rgba(58, 48, 36, 0.14);
+}
+
+[data-theme="dark"] .profile-card:hover {
+  box-shadow: 0 18px 42px rgba(201, 149, 42, 0.15);
 }
 
 .profile-photo,
@@ -213,7 +355,7 @@ button {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image: url("./assets/logo.jpeg");
+  background-image: var(--logo-src);
   background-repeat: no-repeat;
   background-position: center 46%;
   background-size: min(74vw, 920px) auto;
@@ -221,6 +363,12 @@ button {
   filter: contrast(1.16) saturate(0.96) drop-shadow(0 22px 24px rgba(22, 17, 12, 0.32));
   mix-blend-mode: multiply;
   transform: translateZ(0);
+}
+
+[data-theme="dark"] .brand-watermark {
+  mix-blend-mode: screen;
+  opacity: 0.12;
+  filter: none;
 }
 
 .app-shell::before {
@@ -243,6 +391,16 @@ button {
   background:
     linear-gradient(rgba(248, 246, 240, 0.46), rgba(248, 246, 240, 0.56)),
     radial-gradient(circle at 50% 48%, transparent 0 26rem, rgba(248, 246, 240, 0.38) 43rem);
+}
+
+[data-theme="dark"] .app-shell::before {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(201, 149, 42, 0.04), transparent 20rem),
+    linear-gradient(115deg, rgba(201, 149, 42, 0.03), transparent 36%);
+}
+
+[data-theme="dark"] .app-shell::after {
+  background: none;
 }
 
 
@@ -285,7 +443,8 @@ button {
   align-items: end;
   gap: 1rem;
   padding: 1.4rem 3.25rem 1.3rem;
-  border-bottom: 3px solid var(--navy);
+  border-bottom: 3px solid var(--primary);
+  transition: border-color 0.3s ease;
 }
 
 .masthead h1 {
@@ -348,18 +507,34 @@ main {
 }
 
 .primary-button {
-  background: var(--navy);
-  color: white;
+  background: var(--primary);
+  color: var(--text-on-primary);
+  transition: background 0.2s, transform 0.15s, box-shadow 0.15s;
+}
+
+.primary-button:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 14px rgba(201, 149, 42, 0.3);
+}
+
+[data-theme="dark"] .primary-button {
+  box-shadow: 0 2px 10px rgba(201, 149, 42, 0.2);
 }
 
 .outline-button {
   background: transparent;
-  color: var(--navy);
+  color: var(--primary);
+  border-color: var(--primary);
+  transition: background 0.2s, color 0.2s;
+}
+
+.outline-button:hover {
+  background: var(--primary-soft);
 }
 
 .light-button {
   border-color: transparent;
-  background: white;
+  background: var(--white);
   color: var(--red);
 }
 
@@ -394,11 +569,12 @@ main {
   color: var(--ink);
   font-weight: 700;
   border-radius: 4px 4px 0 0;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
 .tab.active {
-  background: var(--navy);
-  color: white;
+  background: var(--bg-tab-active);
+  color: var(--text-on-primary);
 }
 
 .tab .dot {
@@ -476,12 +652,17 @@ main {
 }
 
 .task-section {
-  border: 1px solid rgba(228, 222, 211, 0.68);
+  border: 1px solid var(--border-surface);
   border-radius: 6px;
-  background: rgba(255, 253, 249, 0.48);
+  background: var(--bg-card);
   box-shadow: 0 14px 34px rgba(58, 48, 36, 0.06);
   backdrop-filter: blur(1.5px);
   overflow: hidden;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+[data-theme="dark"] .task-section {
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.25);
 }
 
 .section-header {
@@ -509,7 +690,7 @@ main {
 }
 
 .section-header.upcoming {
-  background: rgba(248, 246, 240, 0.58);
+  background: var(--bg-header);
 }
 
 .section-header.completed {
@@ -525,7 +706,7 @@ main {
 
 .task-table th,
 .task-table td {
-  border-bottom: 1px solid rgba(228, 222, 211, 0.58);
+  border-bottom: 1px solid var(--line);
   padding: 0.95rem 1.25rem;
   text-align: left;
   vertical-align: top;
@@ -654,16 +835,29 @@ dialog {
   margin: auto;
   width: min(680px, calc(100vw - 2rem));
   max-height: min(90vh, 90dvh);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border-surface);
   border-radius: 8px;
   padding: 0;
+  background: var(--bg-dialog);
+  color: var(--ink);
+  box-shadow: 0 24px 70px rgba(20, 17, 12, 0.28);
+  overflow: hidden;
+  transition: background 0.3s ease;
+}
+
+:root:not([data-theme="dark"]) dialog {
   background:
     linear-gradient(rgba(255, 253, 249, 0.72), rgba(255, 253, 249, 0.78)),
     url("./assets/logo.jpeg") center 48% / min(78%, 520px) auto no-repeat,
     var(--white);
-  color: var(--ink);
-  box-shadow: 0 24px 70px rgba(20, 17, 12, 0.28);
-  overflow: hidden;
+}
+
+[data-theme="dark"] dialog {
+  background:
+    linear-gradient(rgba(26, 23, 16, 0.90), rgba(26, 23, 16, 0.94)),
+    url("./assets/darkmode.png") center 48% / min(78%, 520px) auto no-repeat,
+    #1a1710;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(201, 149, 42, 0.12) inset;
 }
 
 dialog[open] {
@@ -720,13 +914,22 @@ dialog::before {
 .task-form select,
 .task-form textarea {
   width: 100%;
-  border: 1px solid rgba(228, 222, 211, 0.74);
+  border: 1px solid var(--border-input);
   border-radius: 4px;
   padding: 0.7rem;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--bg-input);
   color: var(--ink);
   font-family: Arial, sans-serif;
   backdrop-filter: blur(1px);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+[data-theme="dark"] .task-form input:focus,
+[data-theme="dark"] .task-form select:focus,
+[data-theme="dark"] .task-form textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(201, 149, 42, 0.12);
 }
 
 .form-grid {
@@ -758,13 +961,14 @@ dialog::before {
 
 .view-toggle {
   display: inline-flex;
-  background: rgba(228, 222, 211, 0.4);
+  background: var(--bg-toggle);
   padding: 3px;
   border-radius: 8px;
   border: 1px solid var(--line);
   white-space: nowrap;
   /* remove bottom margin — now on the wrapper */
   margin-bottom: 0;
+  transition: background 0.3s ease;
 }
 
 .toggle-btn {
@@ -791,6 +995,10 @@ dialog::before {
   box-shadow: 0 2px 8px rgba(20, 35, 59, 0.12);
 }
 
+[data-theme="dark"] .toggle-btn.active {
+  box-shadow: 0 2px 8px rgba(201, 149, 42, 0.18);
+}
+
 .meetings-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -799,8 +1007,8 @@ dialog::before {
 
 .meeting-card {
   position: relative;
-  background: rgba(255, 253, 249, 0.48);
-  border: 1px solid rgba(228, 222, 211, 0.7);
+  background: var(--bg-card);
+  border: 1px solid var(--border-surface);
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 10px 30px rgba(58, 48, 36, 0.05);
@@ -1255,7 +1463,7 @@ dialog::before {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, background 0.3s ease, border-color 0.3s ease;
 }
 .dashboard-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.1); }
 .dashboard-card.dash-overdue { border-left: 4px solid var(--red); }
@@ -1322,6 +1530,7 @@ dialog::before {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 .workload-header {
   display: flex;
@@ -1715,9 +1924,10 @@ dialog::before {
   border: 1px solid rgba(124, 58, 237, 0.18);
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(255, 253, 249, 0.6);
+  background: var(--bg-card);
   backdrop-filter: blur(2px);
   box-shadow: 0 8px 32px rgba(124, 58, 237, 0.08);
+  transition: background 0.3s ease;
 }
 .chat-header {
   display: flex;
@@ -1801,10 +2011,14 @@ dialog::before {
   border-bottom-right-radius: 4px;
 }
 .chat-msg.theirs .chat-bubble {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--white);
   color: var(--ink);
-  border: 1px solid rgba(228, 222, 211, 0.8);
+  border: 1px solid var(--line);
   border-bottom-left-radius: 4px;
+}
+
+[data-theme="dark"] .chat-msg.theirs .chat-bubble {
+  background: rgba(40, 36, 28, 0.95);
 }
 .chat-bubble-img {
   max-width: 240px;
@@ -1956,7 +2170,8 @@ dialog::before {
   gap: 0.4rem;
   padding: 0.65rem 0.75rem;
   border-top: 1px solid rgba(124, 58, 237, 0.12);
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--bg-surface);
+  transition: background 0.3s ease;
 }
 .chat-action-btn {
   flex-shrink: 0;
@@ -2087,6 +2302,7 @@ dialog::before {
   margin-bottom: 2rem;
   box-shadow: 0 4px 20px rgba(20, 35, 59, 0.04);
   overflow: hidden;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .passwords-card-header {
@@ -2151,7 +2367,7 @@ dialog::before {
 }
 
 .passwords-table input:focus {
-  border-color: var(--amber);
+  border-color: var(--accent);
   background: var(--amber-soft);
   outline: none;
 }
@@ -2237,6 +2453,11 @@ dialog::before {
   padding: 2rem;
   overflow-y: auto;
   background: linear-gradient(160deg, #0d1a2e 0%, #14110e 60%, #0d1a2e 100%);
+  transition: background 0.3s ease;
+}
+
+[data-theme="dark"] .auth-screen {
+  background: linear-gradient(160deg, #080805 0%, #0d0e08 50%, #080805 100%);
 }
 
 .auth-screen[hidden] {
@@ -2248,12 +2469,17 @@ dialog::before {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: url("./assets/logo.jpeg");
+  background-image: var(--logo-src);
   background-repeat: no-repeat;
   background-position: center center;
   background-size: min(50vw, 500px) auto;
   opacity: 0.04;
   filter: grayscale(1);
+}
+
+[data-theme="dark"] .auth-watermark {
+  opacity: 0.06;
+  filter: none;
 }
 
 .auth-panel {
@@ -2269,6 +2495,15 @@ dialog::before {
     0 32px 80px rgba(0,0,0,0.7),
     0 0 0 1px rgba(255,255,255,0.06) inset;
   animation: auth-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: border-color 0.3s ease;
+}
+
+[data-theme="dark"] .auth-panel {
+  background: #12100a;
+  border-color: rgba(201, 149, 42, 0.2);
+  box-shadow:
+    0 32px 80px rgba(0,0,0,0.85),
+    0 0 0 1px rgba(201, 149, 42, 0.1) inset;
 }
 
 @keyframes auth-slide-in {
@@ -2468,6 +2703,17 @@ dialog::before {
   box-shadow: 0 6px 20px rgba(20,35,59,0.5);
 }
 
+[data-theme="dark"] .auth-submit {
+  background: linear-gradient(135deg, #c9952a 0%, #a87b20 100%);
+  border-color: rgba(201, 149, 42, 0.4);
+  color: #0d0d0b;
+}
+
+[data-theme="dark"] .auth-submit:hover {
+  background: linear-gradient(135deg, #e5b842 0%, #c9952a 100%);
+  box-shadow: 0 6px 20px rgba(201, 149, 42, 0.4);
+}
+
 .auth-submit:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -2499,7 +2745,7 @@ dialog::before {
 }
 
 .pin-dialog-inner {
-  background: #fffdf9;
+  background: var(--bg-dialog);
   border-radius: 1.25rem;
   padding: 2rem 2rem 1.75rem;
   display: flex;
@@ -2507,6 +2753,11 @@ dialog::before {
   align-items: center;
   gap: 0;
   box-shadow: 0 32px 80px rgba(0,0,0,0.45);
+  transition: background 0.3s ease;
+}
+
+[data-theme="dark"] .pin-dialog-inner {
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(201, 149, 42, 0.12) inset;
 }
 
 .pin-avatar-wrap {
@@ -2565,7 +2816,7 @@ dialog::before {
   color: var(--navy);
   background: var(--paper);
   outline: none;
-  transition: border-color 0.18s, box-shadow 0.18s, transform 0.1s;
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.1s, background 0.2s;
   caret-color: transparent;
   letter-spacing: 0.05em;
 }
@@ -2576,9 +2827,17 @@ dialog::before {
   transform: scale(1.06);
 }
 
+[data-theme="dark"] .pin-input:focus {
+  box-shadow: 0 0 0 3px rgba(201, 149, 42, 0.2);
+}
+
 .pin-input.filled {
   border-color: var(--navy);
   background: #eef2f8;
+}
+
+[data-theme="dark"] .pin-input.filled {
+  background: rgba(201, 149, 42, 0.1);
 }
 
 .pin-input.shake {
