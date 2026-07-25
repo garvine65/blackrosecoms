@@ -115,6 +115,7 @@
             <button class="toggle-btn" data-view="meetings">Meetings Schedule</button>
             <button class="toggle-btn" data-view="dashboard">Dashboard</button>
             <button class="toggle-btn" data-view="workload">Workload</button>
+            <button class="toggle-btn" data-view="checklist">📋 Checklists</button>
             <button class="toggle-btn unwind-toggle-btn" data-view="unwind"> Unwind</button>
           </div>
         </div>
@@ -203,6 +204,101 @@
             <span id="dashboardSubtitle"></span>
           </section>
           <div id="dashboardGrid" class="dashboard-grid"></div>
+        </div>
+
+        <!-- ── CHECKLISTS VIEW ──────────────────────────────── -->
+        <div id="checklistView" hidden>
+
+          <!-- LIST SUB-VIEW: all checklists -->
+          <div id="clListView">
+            <section class="view-heading">
+              <div>
+                <h2>Monthly Client Checklists</h2>
+                <p style="color:var(--muted);margin:0.2rem 0 0;font-size:0.88rem;">Track per-client monthly compliance &amp; task checklists</p>
+              </div>
+              <button class="primary-button" id="newChecklistBtn">+ New Checklist</button>
+            </section>
+
+            <div class="cl-filters" id="clFilterBar">
+              <select id="clClientFilter" class="cl-select">
+                <option value="all">All Clients</option>
+              </select>
+              <select id="clMonthFilter" class="cl-select">
+                <!-- months populated by JS -->
+              </select>
+            </div>
+
+            <div class="cl-cards-grid" id="clCardsGrid">
+              <!-- checklist cards rendered by JS -->
+            </div>
+          </div>
+
+          <!-- DETAIL SUB-VIEW: single checklist -->
+          <div id="clDetailView" hidden>
+            <!-- Breadcrumb -->
+            <div class="cl-breadcrumb">
+              <button class="cl-back-btn" id="clBackBtn">← All Checklists</button>
+              <span class="cl-breadcrumb-sep">/</span>
+              <span id="clDetailTitle">Checklist</span>
+            </div>
+
+            <!-- Detail header -->
+            <div class="cl-detail-header">
+              <div>
+                <h2 id="clDetailHeading"></h2>
+                <p id="clDetailSubheading" style="color:var(--muted);margin:0.25rem 0 0;font-size:0.88rem;"></p>
+              </div>
+              <div class="cl-detail-actions">
+                <button class="outline-button compact-button" id="clDuplicateBtn">⧉ Copy to Next Month</button>
+                <button class="outline-button compact-button" id="clPrintBtn">🖨 Print</button>
+                <button class="outline-button compact-button cl-danger-btn" id="clDeleteChecklistBtn">🗑 Delete</button>
+              </div>
+            </div>
+
+            <!-- Inner tab bar -->
+            <div class="cl-inner-tabs">
+              <button class="cl-tab active" data-cl-tab="checklist">Checklist Items</button>
+              <button class="cl-tab" data-cl-tab="summary">Summary by Section</button>
+            </div>
+
+            <!-- Checklist items tab -->
+            <div id="clItemsTab">
+              <div id="clSectionsContainer">
+                <!-- sections rendered by JS -->
+              </div>
+              <button class="cl-add-section-btn" id="clAddSectionBtn">+ Add Section</button>
+            </div>
+
+            <!-- Summary tab -->
+            <div id="clSummaryTab" hidden>
+              <div class="cl-summary-header">
+                <div class="cl-summary-meta">
+                  <span id="clSummaryMonth"></span>
+                  <span id="clSummaryClient"></span>
+                </div>
+                <div class="cl-summary-totals" id="clSummaryTotals"></div>
+              </div>
+              <div class="table-responsive">
+                <table class="cl-summary-table" id="clSummaryTable">
+                  <thead>
+                    <tr>
+                      <th>Section</th>
+                      <th>Sub-cat.</th>
+                      <th>Total Items</th>
+                      <th>Complete</th>
+                      <th>Pending</th>
+                      <th>Progress</th>
+                      <th>HOD Confirmed</th>
+                      <th>HOD Pending</th>
+                      <th>HOD Progress</th>
+                    </tr>
+                  </thead>
+                  <tbody id="clSummaryBody"></tbody>
+                  <tfoot id="clSummaryFoot"></tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div id="workloadView" hidden>

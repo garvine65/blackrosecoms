@@ -160,6 +160,7 @@ async function onSignedIn() {
   await loadPasswordsFromDB();
   await loadTasksFromDB();
   await loadMeetingsFromDB();
+  await loadChecklistsFromDB();
   await loadUnwindMessagesFromDB();
   await loadVibesFromDB();
   showProfilePicker();
@@ -758,6 +759,7 @@ function render() {
   const isDash = activeView === "dashboard";
   const isWorkload = activeView === "workload";
   const isUnwind = activeView === "unwind";
+  const isChecklist = activeView === "checklist";
   const isPasswords = isTask && selectedClient === "Passwords";
 
   clientTabs.style.display = isTask ? "" : "none";
@@ -775,6 +777,7 @@ function render() {
   document.querySelector("#dashboardView").hidden = !isDash;
   document.querySelector("#workloadView").hidden = !isWorkload;
   document.querySelector("#unwindView").hidden = !isUnwind;
+  document.getElementById("checklistView").hidden = !isChecklist;
 
   if (isTask) {
     renderFilters();
@@ -790,6 +793,7 @@ function render() {
   if (isDash) renderDashboard();
   if (isWorkload) renderWorkload();
   if (isUnwind) renderUnwind();
+  if (isChecklist) renderChecklists();
   
   updateNotifications();
 }
@@ -2713,4 +2717,708 @@ setupAuthForm();
 setupPinDialog();
 initAuth(); // async - shows auth screen or profile picker based on session
 
+// ═══════════════════════════════════════════════════════════════════
+//  MONTHLY CLIENT CHECKLISTS
+// ═══════════════════════════════════════════════════════════════════
+
+const clStorageKey = "blackrose-checklists";
+
+// Section colour palette cycling
+const CL_SECTION_COLORS = [
+  "#e74c3c","#3498db","#2ecc71","#f39c12","#9b59b6",
+  "#1abc9c","#e67e22","#e91e63","#607d8b","#795548","#00bcd4","#c9952a"
+];
+const CL_ROW_CLASSES = [
+  "cl-row-billing","cl-row-trust","cl-row-cash","cl-row-expense","cl-row-advances",
+  "cl-row-receivables","cl-row-payables","cl-row-payroll","cl-row-tax","cl-row-budget",
+  "cl-row-governance","cl-row-default"
+];
+
+// ── Pre-built Templates ───────────────────────────────────────────
+const CL_TEMPLATES = [
+  {
+    id: "tpl-law-firm",
+    name: "Law Firm Monthly Checklist",
+    clientTypes: ["AMM Law"],
+    sections: [
+      { name: "Billing & Revenue", subCategories: ["Disbursements","Disbursements","Disbursements","Invoice generation","Invoice generation","Invoice generation","Invoice generation","Revenue recognition","Revenue recognition","Revenue recognition","Revenue recognition","Revenue recognition","Revenue recognition","Revenue recognition"], items: ["Ensure all disbursements (receipts, stamps) are captured","Ensure disbursements are correctly coded to client/matter and supported by receipts","Reconcile disbursements ledger to supporting invoices and receipts","Raise all invoices for time and disbursements billed this month","Confirm invoices are approved by the responsible partner before dispatch","Confirm invoice terms, client reference, and VAT treatment are correct on each invoice","Issue invoices to clients and record in the billing register against each matter","Post revenue for invoices raised in the billing ledger","Accrue unbilled time for matters where work is substantially complete but not yet invoiced","Reconcile total fees billed vs fees collected vs WIP movement for the month","Confirm all invoice receipts are posted and allocated correctly in the ledger","Ensure any credit notes issued are authorised and correctly posted","Review WIP aging and flag stale unbilled matters to the partner","Review billing register for completeness and accuracy"] },
+      { name: "Client Trust / Ledger Accounts", subCategories: ["Trust reconciliation","Trust reconciliation","Trust reconciliation","Client ledger","Client ledger","Client ledger","Client ledger","Client ledger","Client ledger","Client ledger","Client ledger"], items: ["Reconcile each client trust/ledger account balance to the trust bank statement","Confirm aggregate of all individual client ledger balances equals the trust bank balance","Ensure no client ledger goes into debit (negative balance) — flag immediately","Post all trust receipts and payments to the correct client matter","Confirm all client receipts have been properly identified and allocated","Ensure all disbursements paid from trust are authorised and receipted","Reconcile client trust receipts to bank deposit records","Confirm all transfers between trust and operating accounts are authorised","Reconcile all credit card receipts from clients to the trust ledger","Review all client ledger accounts for unallocated funds","Ensure trust accounting reports are printed and retained for the month"] },
+      { name: "Cash & Bank", subCategories: ["Bank reconciliation","Bank reconciliation","Bank reconciliation","Bank reconciliation","Cash management","Cash management","Cash management","Cash management","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash"], items: ["Prepare and sign off bank reconciliation for the operating account","Prepare and sign off bank reconciliation for the trust account","Review and clear all outstanding reconciling items older than 30 days","Confirm all bank charges and interest are posted","Prepare a weekly cash flow forecast for the upcoming month","Review bank balances and flag any shortfalls to management","Confirm all inter-bank transfers are reconciled and authorised","Ensure all direct debits and standing orders are accounted for in the ledger","Count petty cash and prepare petty cash reconciliation","Ensure all petty cash vouchers are signed and filed","Replenish petty cash and record the journal entry","Confirm petty cash float does not exceed approved limit","Post petty cash expenditure by category","Review petty cash for unusual or unapproved items","Ensure petty cash custodian has signed the reconciliation","File petty cash reconciliation with supporting receipts"] },
+      { name: "Expenditure & Cost Control", subCategories: ["Payables","Payables","Payables","Cost review","Cost review","Cost review","Cost review","Cost review","Cost review"], items: ["Review all supplier invoices received and post to the accounts payable ledger","Confirm all invoices are authorised for payment","Prepare payment run and obtain approval before processing","Review overhead costs against budget and flag variances above 10%","Confirm all staff expense claims are supported and authorised","Post staff expense claims to the correct cost centre","Review subscriptions, licenses, and retainers for the month","Reconcile electricity, internet, and utilities to contracts","Identify and investigate any cost items not in the approved budget"] },
+      { name: "Advances & Disbursement Float", subCategories: ["Advances","Advances","Advances","Float management","Float management","Float management","Float management","Float management"], items: ["Review all outstanding staff advances and confirm repayment status","Ensure all advances have supporting documentation and authorisation","Reconcile advances ledger to the general ledger","Review disbursement float balance and reconcile to the sub-ledger","Ensure all disbursements paid from float are properly receipted","Reconcile float replenishment requests to supporting documents","Confirm no float balance exceeds authorised limits","Post all float transactions to the accounting system"] },
+      { name: "Receivables", subCategories: ["Debtors","Debtors","Debtors","Debtors","Collections","Collections","Collections","Collections"], items: ["Prepare debtors aging report for the month","Review all balances outstanding over 60 days and escalate","Issue statements to all clients with outstanding balances","Reconcile debtors ledger to the general ledger control account","Follow up on all debtors outstanding over 30 days","Record all collections received and post to the correct client account","Confirm all post-dated cheques have been banked on the due date","Update the collections tracker and report to management"] },
+      { name: "Payables", subCategories: ["Creditors","Creditors","Creditors","Creditors","Payments","Payments","Payments","Payments","Payments"], items: ["Prepare creditors aging report for the month","Confirm all supplier statements have been received and reconciled","Ensure GRN/delivery notes are matched to invoices before payment","Review all payables for disputed items and resolve","Process approved payment run via bank","Ensure all EFT payments are supported by authorised payment schedules","Confirm all cheque payments are dual-authorised","Reconcile creditors ledger to the general ledger","Confirm all accruals for month-end have been posted"] },
+      { name: "Payroll & HR Costs", subCategories: ["Payroll","Payroll","Payroll","Payroll","PAYE & NSSF","PAYE & NSSF","PAYE & NSSF","PAYE & NSSF","PAYE & NSSF"], items: ["Confirm headcount for the month with HR","Process payroll for all permanent and contract staff","Obtain payroll approval from the Managing Director/Partner","Post payroll journals to the accounting system","Calculate and confirm PAYE deductions per employee","Prepare PAYE returns and file on iTax by the 9th","Remit NSSF contributions by the 9th of the month","Remit NHIF contributions by the 9th of the month","Reconcile payroll ledger to payroll register and bank payments"] },
+      { name: "Tax & Regulatory Compliance", subCategories: ["VAT","VAT","PAYE","PAYE","Withholding tax","Withholding tax","Annual"], items: ["Prepare VAT workings from the ledger — input vs output tax","File VAT return on iTax and remit by the 20th","Confirm PAYE has been filed and paid","Reconcile PAYE ledger to payroll","Prepare withholding tax certificates for suppliers subject to WHT","File and remit withholding tax by the 20th","Confirm any other statutory returns due for the month are filed"] },
+      { name: "Budget & Management Reporting", subCategories: ["Reporting","Reporting","Reporting","Reporting","Reporting"], items: ["Prepare month-end management accounts (P&L, Balance Sheet, Cash Flow)","Compare actuals vs budget and prepare variance commentary","Circulate management pack to partners by the 5th of the following month","Update rolling cash flow forecast for the next 3 months","File all month-end working papers and supporting documents"] },
+      { name: "Governance & Operations", subCategories: ["Compliance","Compliance","Filing","Filing","Filing","Filing"], items: ["Confirm all signed financial authorities are current and on file","Review access rights to the accounting system — flag any changes needed","Ensure all supplier contracts and retainers are filed and current","File all bank correspondence and statements received this month","Archive month-end reports in the shared drive","Confirm insurance policies are current and premiums paid"] }
+    ]
+  },
+  {
+    id: "tpl-engineering",
+    name: "Engineering / Consulting Monthly Checklist",
+    clientTypes: ["Briq Consultancy","Multiplier","Ultimate","ADH"],
+    sections: [
+      { name: "Revenue & Billing", subCategories: ["Invoicing","Invoicing","Invoicing","Revenue recognition","Revenue recognition","Revenue recognition","Revenue recognition","Revenue recognition","WIP","WIP","WIP"], items: ["Raise invoices for all billable milestones achieved this month","Confirm all invoices are approved by the project manager before dispatch","Issue invoices to clients and update the billing register","Post all invoice revenue to the correct project and cost centre","Reconcile revenue recognised to progress billings and project completion %","Accrue unbilled revenue for work substantially complete but not yet invoiced","Confirm deferred revenue adjustments are correctly posted","Review revenue recognition policies for long-term contracts","Update WIP schedule for all active projects","Reconcile WIP movements to project cost reports","Confirm WIP write-offs are authorised by the MD"] },
+      { name: "Project Accounting & WIP", subCategories: ["Cost capture","Cost capture","Cost capture","Cost capture","Cost allocation","Cost allocation","Cost allocation","Cost allocation","Project review","Project review","Project review"], items: ["Post all direct project costs (labour, materials, subcontractors) to the correct project code","Confirm timesheet sign-off for all billable hours for the month","Reconcile labour costs to payroll and confirm allocation to projects","Ensure all purchase orders are matched to delivery notes and invoices","Allocate indirect project overheads using the approved allocation basis","Confirm all subcontractor invoices are supported by work completion certificates","Review project cost budgets vs actuals and flag overspend to PM","Post any project variations approved this month","Review all active projects with the PM — confirm progress %","Flag projects at risk of overrun or delay to management","Confirm project close-out documentation is completed for completed projects"] },
+      { name: "Expenditure & Cost Control", subCategories: ["Payables","Payables","Payables","Cost review","Cost review","Cost review","Cost review","Cost review","Cost review","Cost review"], items: ["Review all supplier invoices and post to the accounts payable ledger","Confirm all invoices are authorised for payment","Prepare payment run and obtain approval before processing","Review overhead costs against budget — flag variances above 10%","Confirm all staff expense claims are supported and authorised","Post staff expense claims to the correct cost centre","Review subscriptions, licenses, and equipment leases for the month","Reconcile utilities and facility costs to contracts","Identify any capital expenditure vs revenue expenditure items","Ensure all purchase orders are raised before commitment of spend"] },
+      { name: "Advances", subCategories: ["Staff advances","Staff advances","Staff advances","Float","Float","Float","Float","Float"], items: ["Review all outstanding staff advances and confirm repayment status","Ensure all advances have supporting documentation and authorisation","Reconcile advances ledger to the general ledger","Review site/project float balances and reconcile to the sub-ledger","Ensure all petty expenses paid from float are properly receipted","Reconcile float replenishment requests to supporting documents","Confirm no float balance exceeds authorised limits","Post all float transactions to the accounting system"] },
+      { name: "Receivables", subCategories: ["Debtors","Debtors","Debtors","Debtors","Collections","Collections","Collections","Collections"], items: ["Prepare debtors aging report for the month","Review all balances outstanding over 60 days and escalate","Issue statements to all clients with outstanding balances","Reconcile debtors ledger to the general ledger control account","Follow up on all debtors outstanding over 30 days","Record all collections received and post to the correct project","Confirm all post-dated cheques have been banked on the due date","Update the collections tracker and report to management"] },
+      { name: "Payables", subCategories: ["Creditors","Creditors","Creditors","Creditors","Payments","Payments","Payments","Payments"], items: ["Prepare creditors aging report for the month","Confirm all supplier statements have been received and reconciled","Ensure delivery notes are matched to invoices before payment","Review all payables for disputed items and resolve","Process approved payment run via bank","Ensure all EFT payments are supported by authorised payment schedules","Confirm all cheque payments are dual-authorised","Reconcile creditors ledger to the general ledger"] },
+      { name: "Payroll & Staff Costs", subCategories: ["Payroll","Payroll","Payroll","PAYE & deductions","PAYE & deductions","PAYE & deductions","PAYE & deductions","PAYE & deductions","Site costs"], items: ["Confirm headcount for the month with HR","Process payroll for all permanent and contract staff","Obtain payroll approval from the MD","Calculate and confirm PAYE deductions per employee","Prepare PAYE returns and file on iTax by the 9th","Remit NSSF contributions by the 9th","Remit NHIF contributions by the 9th","Reconcile payroll ledger to payroll register and bank payments","Post site allowances and per diems to the correct project code"] },
+      { name: "Cash & Bank", subCategories: ["Bank reconciliation","Bank reconciliation","Bank reconciliation","Bank reconciliation","Cash management","Cash management","Cash management","Cash management","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash"], items: ["Prepare and sign off bank reconciliation for all accounts","Review and clear all outstanding reconciling items older than 30 days","Confirm all bank charges and interest are posted","Ensure all inter-bank transfers are reconciled and authorised","Prepare weekly cash flow forecast for the upcoming month","Review bank balances and flag any shortfalls to management","Confirm all direct debits and standing orders are accounted for","Ensure all site bank accounts are reconciled","Count site/office petty cash and prepare reconciliation","Ensure all petty cash vouchers are signed and filed","Replenish petty cash and record the journal","Confirm petty cash float does not exceed approved limit","Post petty cash expenditure by category","Review petty cash for unusual or unapproved items","Ensure petty cash custodian has signed the reconciliation","File petty cash reconciliation with supporting receipts","Reconcile mobile money (M-Pesa) transactions to the cashbook","Confirm all M-Pesa payments are posted to the correct project","Post any cash sales or collections directly to the cashbook"] },
+      { name: "Balance Sheet Integrity", subCategories: ["Fixed assets","Fixed assets","Working capital","Working capital","Working capital","Working capital","General ledger"], items: ["Confirm fixed asset additions and disposals are posted and authorised","Reconcile fixed asset register to the general ledger","Confirm all prepayments and accruals for the month are posted","Review all balance sheet accounts and confirm no long-outstanding items","Reconcile intercompany accounts (if applicable)","Confirm all loans and borrowings are reconciled to statements","Complete full balance sheet reconciliation and sign off"] },
+      { name: "Tax & Regulatory Compliance", subCategories: ["VAT","VAT","PAYE","Withholding tax","Withholding tax","Corporate tax","Other"], items: ["Prepare VAT workings from the ledger — input vs output tax","File VAT return on iTax and remit by the 20th","Confirm PAYE has been filed and paid","Prepare withholding tax certificates for suppliers subject to WHT","File and remit withholding tax by the 20th","Calculate and post corporate tax instalment if applicable this quarter","Confirm any other statutory returns due for the month are filed"] },
+      { name: "Budget & Forecasting", subCategories: ["Reporting","Reporting","Reporting","Forecasting"], items: ["Prepare month-end management accounts (P&L, Balance Sheet, Cash Flow)","Compare actuals vs budget — prepare variance commentary","Circulate management pack to MD by the 5th of the following month","Update rolling cash flow forecast and project profitability reports"] },
+      { name: "Management Reporting & Governance", subCategories: ["Reporting","Reporting","Compliance","Compliance","Compliance","Filing","Filing"], items: ["Prepare project profitability reports for all active projects","Prepare monthly KPI dashboard for management review","Confirm all signed financial authorities are current and on file","Review access rights to the accounting system — flag any changes","Ensure all project contracts and variations are filed and current","File all bank correspondence and statements received this month","Archive month-end reports in the shared drive"] },
+      { name: "TZ Company", subCategories: ["TZ compliance","TZ compliance"], items: ["Reconcile TZ entity accounts and confirm inter-company eliminations","Confirm TRA filing requirements are met for the month"] },
+      { name: "Archival / Filing", subCategories: ["Physical","Physical","Digital","Digital","Digital"], items: ["Ensure all physical invoices, receipts, and vouchers are filed by date","Confirm all bank statements and correspondence are physically filed","Upload all month-end reports to the shared drive","Confirm all project files are backed up on the server","Ensure accounting data backup has been performed and verified"] }
+    ]
+  },
+  {
+    id: "tpl-general",
+    name: "General Monthly Checklist",
+    clientTypes: ["BRC Consultancy"],
+    sections: [
+      { name: "Billing & Revenue", subCategories: ["Invoicing","Revenue recognition","Revenue recognition"], items: ["Raise and dispatch all invoices for the month","Post all revenue to the correct ledger accounts","Reconcile revenue to collections and bank"] },
+      { name: "Cash & Bank", subCategories: ["Bank reconciliation","Petty cash"], items: ["Prepare and sign off monthly bank reconciliation","Reconcile petty cash and replenish float"] },
+      { name: "Payables & Receivables", subCategories: ["Creditors","Debtors"], items: ["Prepare creditors aging and process approved payment run","Prepare debtors aging and follow up on overdue accounts"] },
+      { name: "Payroll & Tax", subCategories: ["Payroll","PAYE","VAT"], items: ["Process and approve payroll","File PAYE returns by the 9th","File VAT return by the 20th"] },
+      { name: "Reporting", subCategories: ["Management accounts"], items: ["Prepare month-end management accounts and circulate to management"] }
+    ]
+  }
+];
+
+// ── State ─────────────────────────────────────────────────────────
+let monthlyChecklists = [];
+let clActiveView = "list";   // "list" | "detail"
+let clActiveId = null;       // active checklist id
+let clActiveTab = "checklist"; // "checklist" | "summary"
+let clFilterClient = "all";
+let clFilterMonth = "all";
+
+// ── Persistence ───────────────────────────────────────────────────
+function loadChecklists() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(clStorageKey) || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch { return []; }
+}
+
+function persistChecklists() {
+  localStorage.setItem(clStorageKey, JSON.stringify(monthlyChecklists));
+}
+
+async function loadChecklistsFromDB() {
+  try {
+    const { data, error } = await supabase.from("monthly_checklists").select("*");
+    if (!error && data && data.length) {
+      monthlyChecklists = data.map(row => JSON.parse(row.data));
+    } else {
+      monthlyChecklists = loadChecklists();
+    }
+  } catch {
+    monthlyChecklists = loadChecklists();
+  }
+}
+
+async function saveChecklistToDB(cl) {
+  try {
+    await supabase.from("monthly_checklists").upsert([{ id: cl.id, data: JSON.stringify(cl) }]);
+  } catch { /* graceful: localStorage is source of truth */ }
+}
+
+async function deleteChecklistFromDB(id) {
+  try {
+    await supabase.from("monthly_checklists").delete().eq("id", id);
+  } catch {}
+}
+
+// ── Template helper ───────────────────────────────────────────────
+function clCreateFromTemplate(client, monthLabel, templateId) {
+  const tpl = CL_TEMPLATES.find(t => t.id === templateId) || CL_TEMPLATES[0];
+  const id = createId();
+  const sections = tpl.sections.map((s, si) => ({
+    id: createId(),
+    name: s.name,
+    color: CL_SECTION_COLORS[si % CL_SECTION_COLORS.length],
+    collapsed: false,
+    items: s.items.map((text, ii) => ({
+      id: createId(),
+      text,
+      subCategory: s.subCategories ? (s.subCategories[ii] || "") : "",
+      status: "pending",
+      completedBy: null, completedAt: null,
+      hodStatus: "pending",
+      hodConfirmedBy: null, hodConfirmedAt: null,
+      notes: ""
+    }))
+  }));
+  return { id, client, month: monthLabel, templateId, templateName: tpl.name, sections, createdAt: new Date().toISOString(), createdBy: activeProfileId };
+}
+
+function clDuplicateToNextMonth(cl) {
+  const [yr, mo] = cl.month.split("-").map(Number);
+  const next = new Date(yr, mo, 1);
+  const nextLabel = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`;
+  const exists = monthlyChecklists.some(c => c.client === cl.client && c.month === nextLabel);
+  if (exists) { alert(`A checklist for ${cl.client} — ${nextLabel} already exists.`); return; }
+  const newCl = {
+    ...clCreateFromTemplate(cl.client, nextLabel, cl.templateId),
+    sections: cl.sections.map(s => ({
+      ...s,
+      id: createId(),
+      items: s.items.map(item => ({
+        ...item,
+        id: createId(),
+        status: "pending", completedBy: null, completedAt: null,
+        hodStatus: "pending", hodConfirmedBy: null, hodConfirmedAt: null,
+        notes: ""
+      }))
+    }))
+  };
+  monthlyChecklists.push(newCl);
+  persistChecklists();
+  saveChecklistToDB(newCl);
+  alert(`Checklist copied to ${nextLabel} successfully!`);
+  openChecklistDetail(newCl.id);
+}
+
+// ── Utility: month label → display ───────────────────────────────
+function clFormatMonth(monthStr) {
+  if (!monthStr || monthStr === "all") return "All Months";
+  const [yr, mo] = monthStr.split("-");
+  return new Date(+yr, +mo - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+}
+
+function clCurrentMonth() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// ── Main render dispatcher ────────────────────────────────────────
+function renderChecklists() {
+  const view = document.getElementById("checklistView");
+  if (!view || view.hidden) return;
+  populateClFilters();
+  if (clActiveView === "list") {
+    document.getElementById("clListView").hidden = false;
+    document.getElementById("clDetailView").hidden = true;
+    renderChecklistList();
+  } else {
+    document.getElementById("clListView").hidden = true;
+    document.getElementById("clDetailView").hidden = false;
+    renderChecklistDetail(clActiveId);
+  }
+}
+
+// ── Filter helpers ────────────────────────────────────────────────
+function populateClFilters() {
+  // Client filter
+  const cSel = document.getElementById("clClientFilter");
+  const curC = cSel.value;
+  const clClients = [...new Set(monthlyChecklists.map(c => c.client))].sort();
+  cSel.innerHTML = `<option value="all">All Clients</option>` +
+    clients.filter(c => c !== "All clients").map(c => `<option value="${c}">${c}</option>`).join("");
+  cSel.value = clClients.includes(curC) ? curC : "all";
+
+  // Month filter
+  const mSel = document.getElementById("clMonthFilter");
+  const curM = mSel.value;
+  const months = [...new Set(monthlyChecklists.map(c => c.month))].sort().reverse();
+  mSel.innerHTML = `<option value="all">All Months</option>` +
+    months.map(m => `<option value="${m}">${clFormatMonth(m)}</option>`).join("");
+  if (months.includes(curM)) mSel.value = curM;
+}
+
+// ── List view ─────────────────────────────────────────────────────
+function renderChecklistList() {
+  const grid = document.getElementById("clCardsGrid");
+  let filtered = monthlyChecklists;
+  if (clFilterClient !== "all") filtered = filtered.filter(c => c.client === clFilterClient);
+  if (clFilterMonth !== "all") filtered = filtered.filter(c => c.month === clFilterMonth);
+  filtered = filtered.slice().sort((a, b) => b.month.localeCompare(a.month) || a.client.localeCompare(b.client));
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="cl-empty-state">
+      <div class="cl-empty-icon">📋</div>
+      <h3>No checklists yet</h3>
+      <p>Click <strong>+ New Checklist</strong> to create one from a template.</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(cl => {
+    const allItems = cl.sections.flatMap(s => s.items);
+    const total = allItems.length;
+    const done = allItems.filter(i => i.status === "complete").length;
+    const hod = allItems.filter(i => i.hodStatus === "confirmed").length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const circumference = 2 * Math.PI * 22;
+    const offset = circumference - (pct / 100) * circumference;
+
+    return `<div class="cl-card" data-cl-id="${cl.id}">
+      <div class="cl-card-top">
+        <div class="cl-card-info">
+          <div class="cl-card-client">${escapeHtml(cl.client)}</div>
+          <div class="cl-card-month">${clFormatMonth(cl.month)}</div>
+          <div class="cl-card-template">${escapeHtml(cl.templateName || "")}</div>
+        </div>
+        <div class="cl-ring-wrap">
+          <svg width="56" height="56" viewBox="0 0 56 56">
+            <circle class="cl-ring-bg" cx="28" cy="28" r="22"/>
+            <circle class="cl-ring-fill" cx="28" cy="28" r="22"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${offset}"/>
+          </svg>
+          <div class="cl-ring-label">${pct}%</div>
+        </div>
+      </div>
+      <div class="cl-card-stats">
+        <span class="cl-stat-chip done">✓ ${done} done</span>
+        <span class="cl-stat-chip pending">⏳ ${total - done} pending</span>
+        ${hod ? `<span class="cl-stat-chip hod">★ ${hod} HOD</span>` : ""}
+      </div>
+      <div class="cl-card-footer">
+        <span>${cl.sections.length} sections · ${total} items</span>
+        <button class="cl-card-open-btn" data-cl-id="${cl.id}">Open →</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  grid.querySelectorAll(".cl-card, .cl-card-open-btn").forEach(el => {
+    el.addEventListener("click", () => openChecklistDetail(el.closest("[data-cl-id]").dataset.clId));
+  });
+}
+
+function openChecklistDetail(id) {
+  clActiveId = id;
+  clActiveView = "detail";
+  clActiveTab = "checklist";
+  renderChecklists();
+}
+
+// ── Detail view ───────────────────────────────────────────────────
+function renderChecklistDetail(id) {
+  const cl = monthlyChecklists.find(c => c.id === id);
+  if (!cl) { clActiveView = "list"; renderChecklists(); return; }
+
+  document.getElementById("clDetailTitle").textContent = `${cl.client} — ${clFormatMonth(cl.month)}`;
+  document.getElementById("clDetailHeading").textContent = `${cl.client}`;
+  document.getElementById("clDetailSubheading").textContent = `${clFormatMonth(cl.month)} · ${cl.templateName}`;
+
+  // Inner tab state
+  document.querySelectorAll(".cl-tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.clTab === clActiveTab);
+  });
+  document.getElementById("clItemsTab").hidden = clActiveTab !== "checklist";
+  document.getElementById("clSummaryTab").hidden = clActiveTab !== "summary";
+
+  if (clActiveTab === "checklist") renderChecklistItems(cl);
+  else renderChecklistSummary(cl);
+}
+
+// ── Items view ────────────────────────────────────────────────────
+function renderChecklistItems(cl) {
+  const container = document.getElementById("clSectionsContainer");
+  container.innerHTML = cl.sections.map((section, si) => {
+    const total = section.items.length;
+    const done = section.items.filter(i => i.status === "complete").length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    return `
+    <div class="cl-section" data-section-id="${section.id}">
+      <div class="cl-section-header">
+        <span class="cl-section-color-dot" style="background:${section.color}"></span>
+        <span class="cl-section-name" data-rename="${section.id}">${escapeHtml(section.name)}</span>
+        <span class="cl-section-meta">
+          <span>${done}/${total}</span>
+          <span class="cl-section-progress-text">${pct}%</span>
+        </span>
+        <button class="cl-section-collapse-btn ${section.collapsed ? "collapsed" : ""}" data-collapse="${section.id}" title="Collapse">▾</button>
+        <button class="cl-section-delete-btn" data-del-section="${section.id}" title="Delete section">✕</button>
+      </div>
+      ${section.collapsed ? "" : `
+      <div class="cl-items-body" data-items-body="${section.id}">
+        ${section.items.map((item, ii) => renderClItemRow(item, ii + 1, section.id)).join("")}
+        <div class="cl-add-item-row">
+          <input class="cl-add-item-input" type="text" placeholder="Add a new checklist item…" data-add-input="${section.id}" />
+          <button class="cl-add-item-btn" data-add-item="${section.id}">+ Add</button>
+        </div>
+      </div>`}
+    </div>`;
+  }).join("");
+
+  bindChecklistItemEvents(cl);
+}
+
+function renderClItemRow(item, num, sectionId) {
+  const isComplete = item.status === "complete";
+  const isHod = item.hodStatus === "confirmed";
+  const completedByName = item.completedBy ? (getProfile(item.completedBy)?.name || "—") : "";
+  const completedAt = item.completedAt ? new Date(item.completedAt).toLocaleDateString("en-GB", { day:"numeric", month:"short" }) : "";
+  const hodByName = item.hodConfirmedBy ? (getProfile(item.hodConfirmedBy)?.name || "—") : "";
+
+  return `<div class="cl-item-row ${isComplete ? "item-complete" : ""}" data-item-id="${item.id}" data-section-id="${sectionId}">
+    <span class="cl-item-num">${num}</span>
+    <div class="cl-item-text-wrap">
+      <div class="cl-item-text ${isComplete ? "complete-text" : ""}">${escapeHtml(item.text)}</div>
+      ${item.subCategory ? `<div class="cl-item-subcategory">${escapeHtml(item.subCategory)}</div>` : ""}
+      ${item.notes ? `<div class="cl-item-subcategory" style="color:var(--primary);margin-top:2px;">📝 ${escapeHtml(item.notes)}</div>` : ""}
+    </div>
+    <div class="cl-item-meta">
+      ${completedByName ? `<span>${completedByName}</span><span>${completedAt}</span>` : ""}
+      ${isHod && hodByName ? `<span style="color:var(--primary)">★ ${hodByName}</span>` : ""}
+    </div>
+    <button class="cl-status-btn ${isComplete ? "complete" : ""}" data-toggle-status="${item.id}" data-section-id="${sectionId}">
+      ${isComplete ? "✓ Complete" : "Pending"}
+    </button>
+    <button class="cl-hod-btn ${isHod ? "confirmed" : ""}" data-toggle-hod="${item.id}" data-section-id="${sectionId}" title="HOD Confirmation">
+      ${isHod ? "★ HOD ✓" : "HOD"}
+    </button>
+    <div class="cl-item-actions">
+      <button class="cl-item-del-btn" data-del-item="${item.id}" data-section-id="${sectionId}" title="Delete item">✕</button>
+      <button class="cl-item-del-btn" data-notes-item="${item.id}" data-section-id="${sectionId}" title="Add note" style="font-size:0.9rem;">📝</button>
+    </div>
+  </div>`;
+}
+
+function bindChecklistItemEvents(cl) {
+  const container = document.getElementById("clSectionsContainer");
+
+  // Status toggle
+  container.querySelectorAll("[data-toggle-status]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const item = clFindItem(cl, btn.dataset.sectionId, btn.dataset.toggleStatus);
+      if (!item) return;
+      item.status = item.status === "complete" ? "pending" : "complete";
+      item.completedBy = item.status === "complete" ? (activeProfileId || null) : null;
+      item.completedAt = item.status === "complete" ? new Date().toISOString() : null;
+      persistChecklists(); saveChecklistToDB(cl);
+      renderChecklistDetail(cl.id);
+    });
+  });
+
+  // HOD toggle
+  container.querySelectorAll("[data-toggle-hod]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const item = clFindItem(cl, btn.dataset.sectionId, btn.dataset.toggleHod);
+      if (!item) return;
+      item.hodStatus = item.hodStatus === "confirmed" ? "pending" : "confirmed";
+      item.hodConfirmedBy = item.hodStatus === "confirmed" ? (activeProfileId || null) : null;
+      item.hodConfirmedAt = item.hodStatus === "confirmed" ? new Date().toISOString() : null;
+      persistChecklists(); saveChecklistToDB(cl);
+      renderChecklistDetail(cl.id);
+    });
+  });
+
+  // Delete item
+  container.querySelectorAll("[data-del-item]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const sec = cl.sections.find(s => s.id === btn.dataset.sectionId);
+      if (!sec) return;
+      if (!confirm("Delete this checklist item?")) return;
+      sec.items = sec.items.filter(i => i.id !== btn.dataset.delItem);
+      persistChecklists(); saveChecklistToDB(cl);
+      renderChecklistDetail(cl.id);
+    });
+  });
+
+  // Notes toggle
+  container.querySelectorAll("[data-notes-item]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const item = clFindItem(cl, btn.dataset.sectionId, btn.dataset.notesItem);
+      if (!item) return;
+      const note = prompt("Add/edit note for this item:", item.notes || "");
+      if (note === null) return;
+      item.notes = note.trim();
+      persistChecklists(); saveChecklistToDB(cl);
+      renderChecklistDetail(cl.id);
+    });
+  });
+
+  // Collapse section
+  container.querySelectorAll("[data-collapse]").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const sec = cl.sections.find(s => s.id === btn.dataset.collapse);
+      if (sec) { sec.collapsed = !sec.collapsed; persistChecklists(); renderChecklistDetail(cl.id); }
+    });
+  });
+
+  // Rename section (double-click)
+  container.querySelectorAll("[data-rename]").forEach(span => {
+    span.addEventListener("dblclick", () => {
+      const sec = cl.sections.find(s => s.id === span.dataset.rename);
+      if (!sec) return;
+      const inp = document.createElement("input");
+      inp.className = "cl-section-name-input";
+      inp.value = sec.name;
+      span.replaceWith(inp);
+      inp.focus();
+      inp.addEventListener("blur", () => {
+        sec.name = inp.value.trim() || sec.name;
+        persistChecklists(); renderChecklistDetail(cl.id);
+      });
+      inp.addEventListener("keydown", e => { if (e.key === "Enter") inp.blur(); });
+    });
+  });
+
+  // Delete section
+  container.querySelectorAll("[data-del-section]").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      if (!confirm("Delete this entire section and all its items?")) return;
+      cl.sections = cl.sections.filter(s => s.id !== btn.dataset.delSection);
+      persistChecklists(); saveChecklistToDB(cl); renderChecklistDetail(cl.id);
+    });
+  });
+
+  // Add item (+ button)
+  container.querySelectorAll("[data-add-item]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const sectionId = btn.dataset.addItem;
+      const input = container.querySelector(`[data-add-input="${sectionId}"]`);
+      const text = input ? input.value.trim() : "";
+      if (!text) return;
+      const sec = cl.sections.find(s => s.id === sectionId);
+      if (!sec) return;
+      sec.items.push({ id: createId(), text, subCategory: "", status: "pending", completedBy: null, completedAt: null, hodStatus: "pending", hodConfirmedBy: null, hodConfirmedAt: null, notes: "" });
+      persistChecklists(); saveChecklistToDB(cl); renderChecklistDetail(cl.id);
+    });
+  });
+
+  // Add item on Enter key
+  container.querySelectorAll("[data-add-input]").forEach(input => {
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") container.querySelector(`[data-add-item="${input.dataset.addInput}"]`)?.click();
+    });
+  });
+}
+
+function clFindItem(cl, sectionId, itemId) {
+  const sec = cl.sections.find(s => s.id === sectionId);
+  return sec ? sec.items.find(i => i.id === itemId) : null;
+}
+
+// ── Summary view ──────────────────────────────────────────────────
+function renderChecklistSummary(cl) {
+  const allItems = cl.sections.flatMap(s => s.items);
+  const grandTotal = allItems.length;
+  const grandDone = allItems.filter(i => i.status === "complete").length;
+  const grandHod = allItems.filter(i => i.hodStatus === "confirmed").length;
+  const grandPct = grandTotal ? Math.round((grandDone / grandTotal) * 100) : 0;
+  const grandHodPct = grandTotal ? Math.round((grandHod / grandTotal) * 100) : 0;
+
+  document.getElementById("clSummaryMonth").textContent = clFormatMonth(cl.month);
+  document.getElementById("clSummaryClient").textContent = cl.client;
+
+  document.getElementById("clSummaryTotals").innerHTML = `
+    <div class="cl-total-chip"><span class="num">${grandTotal}</span><span class="lbl">Total Items</span></div>
+    <div class="cl-total-chip done"><span class="num">${grandDone}</span><span class="lbl">Complete</span></div>
+    <div class="cl-total-chip pending"><span class="num">${grandTotal - grandDone}</span><span class="lbl">Pending</span></div>
+    <div class="cl-total-chip hod"><span class="num">${grandHod}</span><span class="lbl">HOD Confirmed</span></div>
+    <div class="cl-total-chip"><span class="num">${grandPct}%</span><span class="lbl">Progress</span></div>
+  `;
+
+  const subCatCounts = (items) => {
+    const map = {};
+    items.forEach(i => { const k = i.subCategory || "—"; if (!map[k]) map[k] = 0; map[k]++; });
+    return Object.keys(map).length;
+  };
+
+  const tbody = document.getElementById("clSummaryBody");
+  tbody.innerHTML = cl.sections.map((sec, si) => {
+    const total = sec.items.length;
+    const done = sec.items.filter(i => i.status === "complete").length;
+    const hod = sec.items.filter(i => i.hodStatus === "confirmed").length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const hodPct = total ? Math.round((hod / total) * 100) : 0;
+    const subCats = subCatCounts(sec.items);
+    const rowCls = CL_ROW_CLASSES[si % CL_ROW_CLASSES.length];
+
+    return `<tr class="${rowCls}">
+      <td>${escapeHtml(sec.name)}</td>
+      <td>${subCats}</td>
+      <td>${total}</td>
+      <td class="${done ? "cl-val-done" : "cl-val-zero"}">${done}</td>
+      <td class="${total - done ? "cl-val-pending" : "cl-val-zero"}">${total - done}</td>
+      <td>
+        <div class="cl-mini-bar-wrap">
+          <div class="cl-mini-bar-track"><div class="cl-mini-bar-fill" style="width:${pct}%"></div></div>
+          <span class="cl-mini-bar-pct">${pct}%</span>
+        </div>
+      </td>
+      <td class="${hod ? "cl-val-hod" : "cl-val-zero"}">${hod}</td>
+      <td class="${total - hod ? "cl-val-pending" : "cl-val-zero"}">${total - hod}</td>
+      <td>
+        <div class="cl-mini-bar-wrap">
+          <div class="cl-mini-bar-track"><div class="cl-mini-bar-fill hod-bar" style="width:${hodPct}%"></div></div>
+          <span class="cl-mini-bar-pct">${hodPct}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("clSummaryFoot").innerHTML = `<tr>
+    <td>TOTAL</td>
+    <td></td>
+    <td>${grandTotal}</td>
+    <td>${grandDone}</td>
+    <td>${grandTotal - grandDone}</td>
+    <td>
+      <div class="cl-mini-bar-wrap">
+        <div class="cl-mini-bar-track"><div class="cl-mini-bar-fill" style="width:${grandPct}%;background:#fff"></div></div>
+        <span class="cl-mini-bar-pct" style="color:inherit">${grandPct}%</span>
+      </div>
+    </td>
+    <td>${grandHod}</td>
+    <td>${grandTotal - grandHod}</td>
+    <td>
+      <div class="cl-mini-bar-wrap">
+        <div class="cl-mini-bar-track"><div class="cl-mini-bar-fill hod-bar" style="width:${grandHodPct}%;background:#fff"></div></div>
+        <span class="cl-mini-bar-pct" style="color:inherit">${grandHodPct}%</span>
+      </div>
+    </td>
+  </tr>`;
+}
+
+// ── Add Section ───────────────────────────────────────────────────
+function clAddSection(cl) {
+  const name = prompt("Section name:");
+  if (!name || !name.trim()) return;
+  cl.sections.push({
+    id: createId(),
+    name: name.trim(),
+    color: CL_SECTION_COLORS[cl.sections.length % CL_SECTION_COLORS.length],
+    collapsed: false,
+    items: []
+  });
+  persistChecklists(); saveChecklistToDB(cl); renderChecklistDetail(cl.id);
+}
+
+// ── New Checklist modal ───────────────────────────────────────────
+function openNewChecklistModal() {
+  const existing = document.getElementById("cl-new-modal-overlay");
+  if (existing) existing.remove();
+
+  const now = clCurrentMonth();
+  const clientOpts = clients.filter(c => c !== "All clients").map(c => `<option value="${c}">${c}</option>`).join("");
+  const tplOpts = CL_TEMPLATES.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+
+  const overlay = document.createElement("div");
+  overlay.className = "cl-new-modal-overlay";
+  overlay.id = "cl-new-modal-overlay";
+  overlay.innerHTML = `
+    <div class="cl-new-modal">
+      <h3>📋 New Monthly Checklist</h3>
+      <div class="cl-modal-field">
+        <label class="cl-modal-label">Client</label>
+        <select class="cl-modal-select" id="clNewClient">${clientOpts}</select>
+      </div>
+      <div class="cl-modal-field">
+        <label class="cl-modal-label">Month</label>
+        <input class="cl-modal-input" type="month" id="clNewMonth" value="${now}" />
+      </div>
+      <div class="cl-modal-field">
+        <label class="cl-modal-label">Template</label>
+        <select class="cl-modal-select" id="clNewTemplate">${tplOpts}</select>
+      </div>
+      <p id="clNewError" style="color:var(--red);font-size:0.82rem;margin:0.25rem 0 0;display:none;">A checklist for this client and month already exists.</p>
+      <div class="cl-modal-actions">
+        <button class="outline-button compact-button" id="clNewCancel">Cancel</button>
+        <button class="primary-button compact-button" id="clNewCreate">Create Checklist</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  // Auto-select best template based on client
+  const clientSel = overlay.querySelector("#clNewClient");
+  const tplSel = overlay.querySelector("#clNewTemplate");
+  function autoPickTemplate() {
+    const c = clientSel.value;
+    const best = CL_TEMPLATES.find(t => t.clientTypes.includes(c));
+    if (best) tplSel.value = best.id;
+  }
+  clientSel.addEventListener("change", autoPickTemplate);
+  autoPickTemplate();
+
+  overlay.querySelector("#clNewCancel").addEventListener("click", () => overlay.remove());
+  overlay.querySelector("#clNewCreate").addEventListener("click", () => {
+    const client = clientSel.value;
+    const month = overlay.querySelector("#clNewMonth").value;
+    const templateId = tplSel.value;
+    const errEl = overlay.querySelector("#clNewError");
+    if (monthlyChecklists.some(c => c.client === client && c.month === month)) {
+      errEl.style.display = "block"; return;
+    }
+    const cl = clCreateFromTemplate(client, month, templateId);
+    monthlyChecklists.push(cl);
+    persistChecklists();
+    saveChecklistToDB(cl);
+    overlay.remove();
+    openChecklistDetail(cl.id);
+  });
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ── Checklist event wiring ────────────────────────────────────────
+document.getElementById("newChecklistBtn").addEventListener("click", openNewChecklistModal);
+
+document.getElementById("clBackBtn").addEventListener("click", () => {
+  clActiveView = "list"; renderChecklists();
+});
+
+document.getElementById("clClientFilter").addEventListener("change", e => {
+  clFilterClient = e.target.value; renderChecklistList();
+});
+
+document.getElementById("clMonthFilter").addEventListener("change", e => {
+  clFilterMonth = e.target.value; renderChecklistList();
+});
+
+document.querySelectorAll(".cl-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    clActiveTab = btn.dataset.clTab;
+    document.querySelectorAll(".cl-tab").forEach(b => b.classList.toggle("active", b === btn));
+    const cl = monthlyChecklists.find(c => c.id === clActiveId);
+    if (!cl) return;
+    document.getElementById("clItemsTab").hidden = clActiveTab !== "checklist";
+    document.getElementById("clSummaryTab").hidden = clActiveTab !== "summary";
+    if (clActiveTab === "checklist") renderChecklistItems(cl);
+    else renderChecklistSummary(cl);
+  });
+});
+
+document.getElementById("clAddSectionBtn").addEventListener("click", () => {
+  const cl = monthlyChecklists.find(c => c.id === clActiveId);
+  if (cl) clAddSection(cl);
+});
+
+document.getElementById("clDuplicateBtn").addEventListener("click", () => {
+  const cl = monthlyChecklists.find(c => c.id === clActiveId);
+  if (cl) clDuplicateToNextMonth(cl);
+});
+
+document.getElementById("clPrintBtn").addEventListener("click", () => {
+  clActiveTab = "summary";
+  renderChecklistDetail(clActiveId);
+  setTimeout(() => window.print(), 300);
+});
+
+document.getElementById("clDeleteChecklistBtn").addEventListener("click", () => {
+  const cl = monthlyChecklists.find(c => c.id === clActiveId);
+  if (!cl) return;
+  if (!confirm(`Delete the checklist for ${cl.client} — ${clFormatMonth(cl.month)}? This cannot be undone.`)) return;
+  monthlyChecklists = monthlyChecklists.filter(c => c.id !== clActiveId);
+  persistChecklists();
+  deleteChecklistFromDB(clActiveId);
+  clActiveView = "list"; clActiveId = null;
+  renderChecklists();
+});
+
+// ── Load checklists on startup ────────────────────────────────────
+monthlyChecklists = loadChecklists();
+
 })(); // end IIFE
+
