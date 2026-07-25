@@ -20,13 +20,13 @@
   /* Semantic theme tokens (light values) */
   --bg-body: #14110e;
   --bg-app: #f8f6f0;
-  --bg-surface: rgba(255, 253, 249, 0.56);
-  --bg-panel: rgba(255, 253, 249, 0.48);
+  --bg-surface: rgba(255, 253, 249, 0.45);
+  --bg-panel: rgba(255, 253, 249, 0.38);
   --bg-input: rgba(255, 255, 255, 0.72);
-  --bg-card: rgba(255, 253, 249, 0.48);
-  --bg-dialog: rgba(255, 253, 249, 0.78);
+  --bg-card: rgba(255, 253, 249, 0.38);
+  --bg-dialog: rgba(255, 253, 249, 0.68);
   --bg-toggle: rgba(228, 222, 211, 0.4);
-  --bg-header: rgba(248, 246, 240, 0.58);
+  --bg-header: rgba(248, 246, 240, 0.48);
   --bg-tab-active: var(--navy);
   --border-surface: rgba(228, 222, 211, 0.72);
   --border-input: rgba(228, 222, 211, 0.74);
@@ -57,13 +57,13 @@
 
   --bg-body: #0d0d0b;
   --bg-app: #111008;
-  --bg-surface: rgba(30, 28, 22, 0.82);
-  --bg-panel: rgba(26, 23, 16, 0.90);
-  --bg-input: rgba(255, 255, 255, 0.055);
-  --bg-card: rgba(26, 23, 16, 0.85);
-  --bg-dialog: #1a1710;
-  --bg-toggle: rgba(201, 149, 42, 0.1);
-  --bg-header: rgba(26, 23, 16, 0.75);
+  --bg-surface: rgba(20, 18, 14, 0.52);
+  --bg-panel: rgba(18, 16, 11, 0.48);
+  --bg-input: rgba(255, 255, 255, 0.07);
+  --bg-card: rgba(20, 18, 14, 0.45);
+  --bg-dialog: rgba(22, 19, 13, 0.75);
+  --bg-toggle: rgba(201, 149, 42, 0.12);
+  --bg-header: rgba(20, 18, 14, 0.55);
   --bg-tab-active: #c9952a;
   --border-surface: rgba(201, 149, 42, 0.22);
   --border-input: rgba(201, 149, 42, 0.25);
@@ -147,15 +147,15 @@ button {
 /* Light mode gradient overlay */
 :root:not([data-theme="dark"]) .app-shell {
   background:
-    linear-gradient(rgba(248, 246, 240, 0.86), rgba(248, 246, 240, 0.9)),
-    radial-gradient(circle at 47% 18%, rgba(255, 255, 255, 0.88), transparent 32rem),
+    linear-gradient(rgba(248, 246, 240, 0.65), rgba(248, 246, 240, 0.72)),
+    radial-gradient(circle at 47% 18%, rgba(255, 255, 255, 0.70), transparent 32rem),
     var(--paper);
 }
 
 /* Dark mode gradient overlay */
 [data-theme="dark"] .app-shell {
   background:
-    linear-gradient(160deg, #0d0e08 0%, #111008 60%, #0d0e08 100%);
+    linear-gradient(160deg, rgba(13, 14, 8, 0.72) 0%, rgba(17, 16, 8, 0.60) 60%, rgba(13, 14, 8, 0.72) 100%);
 }
 
 .app-shell.locked {
@@ -199,15 +199,15 @@ button {
   background-repeat: no-repeat;
   background-position: center 44%;
   background-size: min(82vw, 980px) auto;
-  opacity: 0.42;
+  opacity: 0.65;
   filter: contrast(1.12) saturate(0.92) drop-shadow(0 26px 28px rgba(22, 17, 12, 0.34));
   mix-blend-mode: multiply;
 }
 
 [data-theme="dark"] .login-watermark {
   mix-blend-mode: screen;
-  opacity: 0.15;
-  filter: none;
+  opacity: 0.45;
+  filter: drop-shadow(0 0 35px rgba(201, 149, 42, 0.25));
 }
 
 .login-panel {
@@ -359,7 +359,7 @@ button {
   background-repeat: no-repeat;
   background-position: center 46%;
   background-size: min(74vw, 920px) auto;
-  opacity: 0.52;
+  opacity: 0.65;
   filter: contrast(1.16) saturate(0.96) drop-shadow(0 22px 24px rgba(22, 17, 12, 0.32));
   mix-blend-mode: multiply;
   transform: translateZ(0);
@@ -367,8 +367,8 @@ button {
 
 [data-theme="dark"] .brand-watermark {
   mix-blend-mode: screen;
-  opacity: 0.12;
-  filter: none;
+  opacity: 0.45;
+  filter: drop-shadow(0 0 35px rgba(201, 149, 42, 0.25));
 }
 
 .app-shell::before {
@@ -1456,13 +1456,14 @@ dialog::before {
   padding: 1rem 2rem 2rem;
 }
 .dashboard-card {
-  background: var(--white);
+  background: var(--bg-card);
   border: 1.5px solid var(--line);
   border-radius: 0.75rem;
   padding: 1.25rem 1.25rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  backdrop-filter: blur(3px);
   transition: box-shadow 0.2s, background 0.3s ease, border-color 0.3s ease;
 }
 .dashboard-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.1); }
@@ -1523,13 +1524,14 @@ dialog::before {
   padding: 1rem 2rem 2rem;
 }
 .workload-card {
-  background: var(--white);
+  background: var(--bg-card);
   border: 1.5px solid var(--line);
   border-radius: 0.75rem;
   padding: 1.1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  backdrop-filter: blur(3px);
   transition: background 0.3s ease, border-color 0.3s ease;
 }
 .workload-header {
@@ -2296,12 +2298,13 @@ dialog::before {
 }
 
 .passwords-card {
-  background: var(--white);
+  background: var(--bg-card);
   border: 1px solid var(--line);
   border-radius: 8px;
   margin-bottom: 2rem;
   box-shadow: 0 4px 20px rgba(20, 35, 59, 0.04);
   overflow: hidden;
+  backdrop-filter: blur(3px);
   transition: background 0.3s ease, border-color 0.3s ease;
 }
 
@@ -2473,13 +2476,13 @@ dialog::before {
   background-repeat: no-repeat;
   background-position: center center;
   background-size: min(50vw, 500px) auto;
-  opacity: 0.04;
-  filter: grayscale(1);
+  opacity: 0.18;
+  filter: grayscale(0.5);
 }
 
 [data-theme="dark"] .auth-watermark {
-  opacity: 0.06;
-  filter: none;
+  opacity: 0.28;
+  filter: drop-shadow(0 0 25px rgba(201, 149, 42, 0.2));
 }
 
 .auth-panel {
@@ -2487,7 +2490,8 @@ dialog::before {
   z-index: 1;
   width: 100%;
   max-width: 420px;
-  background: #111827;
+  background: rgba(17, 24, 39, 0.65);
+  backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 1.5rem;
   padding: 2.5rem 2rem 2rem;
@@ -2495,12 +2499,13 @@ dialog::before {
     0 32px 80px rgba(0,0,0,0.7),
     0 0 0 1px rgba(255,255,255,0.06) inset;
   animation: auth-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.3s ease, background 0.3s ease;
 }
 
 [data-theme="dark"] .auth-panel {
-  background: #12100a;
-  border-color: rgba(201, 149, 42, 0.2);
+  background: rgba(18, 16, 10, 0.58);
+  backdrop-filter: blur(12px);
+  border-color: rgba(201, 149, 42, 0.25);
   box-shadow:
     0 32px 80px rgba(0,0,0,0.85),
     0 0 0 1px rgba(201, 149, 42, 0.1) inset;
