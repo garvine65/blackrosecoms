@@ -1086,10 +1086,13 @@ async function handleAction(event) {
   }
   if (action === "complete") {
     const task = tasks.find((t) => t.id === id);
-    if (task && task.repeat && (task.repeat === "monthly" || task.repeat === "weekly")) {
+    if (!task) return;
+    if (task.repeat && (task.repeat === "monthly" || task.repeat === "weekly")) {
       return openRecurrenceDialog(task);
     }
-    updateTask(id, { status: "completed" });
+    showMandatoryWhatsAppCompletionModal(task, () => {
+      updateTask(id, { status: "completed" });
+    });
   }
   if (action === "restore") updateTask(id, { status: "open" });
 }
@@ -1131,26 +1134,7 @@ function openTaskDialog(task) {
   openModal(taskDialog);
 }
 
-async function saveTask(event) {
-  event.preventDefault();
-  const id = document.querySelector("#taskId").value || createId();
-  const existingTask = tasks.find((t) => t.id === id);
-  const nextTask = {
-    id,
-    client: document.querySelector("#taskClient").value,
-    title: document.querySelector("#taskTitle").value,
-    details: document.querySelector("#taskDetails").value,
-    assignedBy: document.querySelector("#taskAssignedBy").value,
-    assignedTo: document.querySelector("#taskAssignedTo").value,
-    due: `${document.querySelector("#taskDate").value}T${document.querySelector("#taskTime").value}`,
-    priority: document.querySelector("#taskPriority").value,
-    repeat: document.querySelector("#taskRepeat").value,
-    status: document.querySelector("#taskStatus").value,
-    checklist: readChecklistEditor(),
-    comments: existingTask?.comments ?? [],
-    source: existingTask?.source ?? "",
-  };
-
+async function executeSaveTask(id, existingTask, nextTask) {
   tasks = tasks.some((task) => task.id === id) ? tasks.map((task) => (task.id === id ? nextTask : task)) : [...tasks, nextTask];
   persistTasks();
   taskDialog.close();
@@ -1177,16 +1161,177 @@ async function saveTask(event) {
     await supabase.from("tasks").insert([dbTask]);
   }
 
-  // Trigger WhatsApp notification for NEW tasks assigned to someone else
+  // Trigger optional WhatsApp notification for NEW tasks assigned to someone else
   const isNewTask = !existingTask;
   const isAssignedToOther = nextTask.assignedTo !== activeProfileId;
   if (isNewTask && isAssignedToOther && nextTask.status === "open") {
     const assignee = getProfile(nextTask.assignedTo);
     if (assignee && assignee.phone) {
-      // Show a styled in-page prompt instead of browser confirm()
       showWhatsAppPrompt(assignee, nextTask);
     }
   }
+}
+
+async function saveTask(event) {
+  event.preventDefault();
+  const id = document.querySelector("#taskId").value || createId();
+  const existingTask = tasks.find((t) => t.id === id);
+  const nextTask = {
+    id,
+    client: document.querySelector("#taskClient").value,
+    title: document.querySelector("#taskTitle").value,
+    details: document.querySelector("#taskDetails").value,
+    assignedBy: document.querySelector("#taskAssignedBy").value,
+    assignedTo: document.querySelector("#taskAssignedTo").value,
+    due: `${document.querySelector("#taskDate").value}T${document.querySelector("#taskTime").value}`,
+    priority: document.querySelector("#taskPriority").value,
+    repeat: document.querySelector("#taskRepeat").value,
+    status: document.querySelector("#taskStatus").value,
+    checklist: readChecklistEditor(),
+    comments: existingTask?.comments ?? [],
+    source: existingTask?.source ?? "",
+  };
+
+  // If status is changed to "completed", require WhatsApp alert to assigner
+  if (nextTask.status === "completed" && (!existingTask || existingTask.status !== "completed")) {
+    showMandatoryWhatsAppCompletionModal(nextTask, () => {
+      executeSaveTask(id, existingTask, nextTask);
+    });
+    return;
+  }
+
+  executeSaveTask(id, existingTask, nextTask);
+}
+
+
+
+// ── Mandatory WhatsApp Completion Modal ───────────────────────────────────────
+function showMandatoryWhatsAppCompletionModal(task, onConfirmedComplete) {
+  const assigner = getProfile(task.assignedBy);
+  const completer = profiles.find((p) => p.id === activeProfileId) || getProfile(task.assignedTo);
+
+  let phoneNum = assigner && assigner.phone ? assigner.phone.trim() : "";
+
+  // Remove existing overlay if any
+  const existingOverlay = document.getElementById("whatsapp-completion-overlay");
+  if (existingOverlay) existingOverlay.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "whatsapp-completion-overlay";
+  overlay.style.cssText = `
+    position: fixed; inset: 0; z-index: 99999;
+    background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease;
+  `;
+
+  overlay.innerHTML = `
+    <div style="
+      background: var(--bg-dialog, #fffdf9); color: var(--ink, #14233b);
+      border: 1px solid var(--border-surface, rgba(201,149,42,0.3));
+      border-radius: 18px; padding: 24px;
+      max-width: 440px; width: 100%;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.45);
+      font-family: inherit;
+    ">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px; border-bottom:1.5px solid var(--line, #e4ded3); padding-bottom:12px;">
+        <span style="font-size: 28px;">✅</span>
+        <div>
+          <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary, #14233b);">Task Completion Notification Required</h3>
+          <p style="margin: 2px 0 0; font-size: 0.8rem; color: var(--muted, #897f73);">Mandatory WhatsApp alert to task assigner</p>
+        </div>
+      </div>
+
+      <p style="font-size: 0.9rem; line-height: 1.5; margin: 0 0 14px;">
+        To mark <strong>"${escapeHtml(task.title)}"</strong> as completed, you must notify the assigner (<strong>${escapeHtml(assigner ? assigner.name : "Assigner")}</strong>) via WhatsApp so they know it is done.
+      </p>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display:block; font-size: 0.82rem; font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">
+          ${escapeHtml(assigner ? assigner.name : "Assigner")}'s WhatsApp Phone Number
+        </label>
+        <input type="tel" id="wa-assigner-phone" value="${escapeHtml(phoneNum)}" placeholder="+254712345678" style="
+          width: 100%; padding: 10px 12px; border-radius: 8px;
+          border: 1px solid var(--border-input, #ccc);
+          background: var(--bg-input, #fff); color: var(--ink, #14233b);
+          font-size: 0.95rem; box-sizing: border-box;
+        " />
+        <p id="wa-phone-err" style="color:var(--red, #b33a3a); font-size:0.8rem; margin:4px 0 0; display:none;">Please enter a valid phone number for ${escapeHtml(assigner ? assigner.name : "Assigner")}.</p>
+      </div>
+
+      <div style="
+        background: var(--paper, #f8f6f0); border: 1px dashed var(--line, #ddd);
+        border-radius: 10px; padding: 12px; font-size: 0.82rem; line-height: 1.55;
+        margin-bottom: 20px; color: var(--ink, #333); font-family: monospace; max-height: 110px; overflow-y: auto;
+      ">
+        <strong>Message Preview:</strong><br/>
+        ✅ *Task Completed! — Black Rose Tracker*<br/>
+        Hi *${escapeHtml(assigner ? assigner.name : "Assigner")}*,<br/>
+        I have completed the task:<br/>
+        📋 *Task:* ${escapeHtml(task.title)}<br/>
+        🏢 *Client:* ${escapeHtml(task.client)}<br/>
+        📅 *Due:* ${formatDue(task.due)}<br/>
+        👤 *Completed by:* ${escapeHtml(completer ? completer.name : "Assignee")}
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button id="wa-cancel-complete-btn" class="outline-button compact-button" style="padding: 9px 16px;">Cancel (Keep Open)</button>
+        <button id="wa-send-complete-btn" class="primary-button compact-button" style="background:#25D366; border-color:#25D366; color:#fff; font-weight:700; padding: 9px 18px; display:flex; align-items:center; gap:6px;">
+          Send &amp; Complete Task 💬
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const phoneInput = overlay.querySelector("#wa-assigner-phone");
+  const phoneErr = overlay.querySelector("#wa-phone-err");
+  const cancelBtn = overlay.querySelector("#wa-cancel-complete-btn");
+  const sendBtn = overlay.querySelector("#wa-send-complete-btn");
+
+  cancelBtn.addEventListener("click", () => {
+    overlay.remove();
+  });
+
+  sendBtn.addEventListener("click", async () => {
+    let rawPhone = phoneInput.value.trim().replace(/[\s\-()]/g, "");
+    if (!rawPhone) {
+      phoneErr.style.display = "block";
+      return;
+    }
+    phoneErr.style.display = "none";
+
+    let cleanPhone = rawPhone;
+    if (!cleanPhone.startsWith("+") && cleanPhone.length === 9) cleanPhone = `+254${cleanPhone}`;
+    else if (!cleanPhone.startsWith("+") && cleanPhone.startsWith("0")) cleanPhone = `+254${cleanPhone.substring(1)}`;
+
+    if (assigner && assigner.phone !== rawPhone) {
+      assigner.phone = rawPhone;
+      profiles = profiles.map(p => p.id === assigner.id ? assigner : p);
+      persistProfiles();
+      supabase.from("profiles").update({ phone: rawPhone }).eq("id", assigner.id).catch(console.error);
+    }
+
+    const message =
+      `✅ *Task Completed! — Black Rose Tracker*\n\n` +
+      `Hi *${assigner ? assigner.name : "Assigner"}*,\n` +
+      `The task assigned has been completed:\n\n` +
+      `📋 *Task:* ${task.title}\n` +
+      `🏢 *Client:* ${task.client}\n` +
+      `📅 *Due:* ${formatDue(task.due)}\n` +
+      (task.details ? `📝 *Details:* ${task.details}\n` : "") +
+      `👤 *Completed by:* ${completer ? completer.name : "Assignee"}\n\n` +
+      `🔗 Open tracker: ${window.location.origin}/`;
+
+    const waUrl = `https://wa.me/${cleanPhone.replace("+", "")}?text=${encodeURIComponent(message)}`;
+
+    window.open(waUrl, "_blank");
+    overlay.remove();
+
+    onConfirmedComplete();
+  });
 }
 
 
@@ -1598,34 +1743,54 @@ function saveRecurrence(event) {
   const task = tasks.find((t) => t.id === id);
   if (!task) return;
 
-  updateTask(id, { status: "completed" });
-
   const nextDate = document.querySelector("#recurrenceDate").value;
   const nextTime = document.querySelector("#recurrenceTime").value;
-  const nextTask = {
-    id: createId(),
-    client: task.client,
-    title: task.title,
-    details: task.details,
-    assignedBy: task.assignedBy,
-    assignedTo: task.assignedTo,
-    due: `${nextDate}T${nextTime}`,
-    repeat: task.repeat,
-    status: "open",
-  };
 
-  tasks = [...tasks, nextTask];
-  persistTasks();
-  recurrenceDialog.close();
-  render();
+  showMandatoryWhatsAppCompletionModal(task, () => {
+    updateTask(id, { status: "completed" });
+
+    const nextTask = {
+      id: createId(),
+      client: task.client,
+      title: task.title,
+      details: task.details,
+      assignedBy: task.assignedBy,
+      assignedTo: task.assignedTo,
+      due: `${nextDate}T${nextTime}`,
+      repeat: task.repeat,
+      status: "open",
+    };
+
+    tasks = [...tasks, nextTask];
+    persistTasks();
+    recurrenceDialog.close();
+    render();
+
+    supabase.from("tasks").insert([{
+      id: nextTask.id,
+      client: nextTask.client,
+      title: nextTask.title,
+      details: nextTask.details,
+      assigned_by: nextTask.assignedBy,
+      assigned_to: nextTask.assignedTo,
+      due_date: nextDate,
+      due_time: nextTime,
+      priority: nextTask.priority || "normal",
+      repeat: nextTask.repeat,
+      status: "open"
+    }]).catch(console.error);
+  });
 }
 
 function skipRecurrence() {
   const id = document.querySelector("#recurrenceTaskId").value;
-  updateTask(id, { status: "completed" });
-  persistTasks();
-  recurrenceDialog.close();
-  render();
+  const task = tasks.find((t) => t.id === id);
+  if (!task) return;
+
+  showMandatoryWhatsAppCompletionModal(task, () => {
+    updateTask(id, { status: "completed" });
+    recurrenceDialog.close();
+  });
 }
 
 function getCountdownLabel(dueStr) {
