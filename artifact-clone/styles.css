@@ -2917,6 +2917,21 @@ dialog::before {
   border-color: var(--primary);
 }
 
+/* Ensure select option dropdown items conform to dark/light theme background and text color */
+select option,
+.cl-select option,
+.cl-modal-select option {
+  background-color: var(--white);
+  color: var(--navy);
+}
+
+[data-theme="dark"] select option,
+[data-theme="dark"] .cl-select option,
+[data-theme="dark"] .cl-modal-select option {
+  background-color: #1a1710 !important;
+  color: #f0e8d6 !important;
+}
+
 /* ── Cards grid ──────────────────────────────────────────── */
 .cl-cards-grid {
   display: grid;

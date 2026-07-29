@@ -70,8 +70,8 @@ async function initAuth() {
   // creating a race condition that silently breaks the login flow.
   supabase.auth.onAuthStateChange(async (_event, session) => {
     console.log('[BlackRose Auth] onAuthStateChange:', _event, '| user:', session?.user?.email ?? 'none');
-    if (_event === 'INITIAL_SESSION') {
-      console.log('[BlackRose Auth] Skipping INITIAL_SESSION (handled by getSession above).');
+    if (_event === 'INITIAL_SESSION' || _event === 'TOKEN_REFRESHED') {
+      console.log(`[BlackRose Auth] Skipping ${_event} (session remains active).`);
       return;
     }
     if (session?.user) {
@@ -846,12 +846,15 @@ function selectProfile(profileId) {
 }
 
 function activateProfile(profileId) {
+  const isAlreadyActive = (activeProfileId === profileId);
   activeProfileId = profileId;
   localStorage.setItem(sessionStorageKey, profileId);
   localStorage.setItem(sessionStorageKey + "-time", Date.now().toString());
   
-  assignmentFilter = "all";
-  activeView = "tasks";
+  if (!isAlreadyActive) {
+    assignmentFilter = "all";
+    activeView = "tasks";
+  }
   document.getElementById("loginScreen").hidden = true;
   document.querySelector(".app-shell").classList.remove("locked");
   render();
@@ -1824,7 +1827,6 @@ function redrawChecklistEditor() {
   if (!container) return;
   container.innerHTML = _pendingChecklist.map((item, idx) => `
     <div class="checklist-editor-item">
-      <div class="checklist-editor-item">
       <input type="checkbox" ${item.done ? "checked" : ""} data-check-idx="${idx}" />
       <span>${escapeHtml(item.label)}</span>
       <button type="button" class="icon-button" data-remove-idx="${idx}" style="margin-left:auto;font-size:0.75rem;">x</button>
