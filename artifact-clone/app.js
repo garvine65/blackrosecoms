@@ -39,7 +39,7 @@ const defaultPasswords = [
 ];
 
 let passwords = loadPasswords();
-let activePasswordCategory = "kra";
+let activePasswordCategory = "all";
 
 // ═══════════════════════════════════════════════════════════════════
 //  UTILITY & HELPER FUNCTIONS
@@ -2984,7 +2984,7 @@ async function deletePasswordRow(id) {
 async function addPasswordRow() {
   const newRow = {
     id: createId(),
-    category: activePasswordCategory,
+    category: activePasswordCategory === "all" ? "kra" : activePasswordCategory,
     client: "",
     username: "",
     password: ""
@@ -3009,12 +3009,29 @@ function renderPasswords() {
   const rowCount = document.querySelector("#passwordRowCount");
   if (!container || !headerRow) return;
 
-  const filtered = passwords.filter(p => p.category === activePasswordCategory);
-  const categoryLabel = activePasswordCategory === "kra" ? "KRA PINs" : "Gmail";
+  const isAll = activePasswordCategory === "all" || !activePasswordCategory;
+  const filtered = isAll
+    ? passwords
+    : passwords.filter(p => (p.category || "").toLowerCase() === activePasswordCategory.toLowerCase());
+
+  const categoryLabel = isAll
+    ? "All Passwords"
+    : activePasswordCategory.toLowerCase() === "kra"
+    ? "KRA PINs"
+    : "Gmail";
+
   tableHeader.textContent = categoryLabel;
   rowCount.textContent = `${filtered.length} ${filtered.length === 1 ? "row" : "rows"}`;
 
-  if (activePasswordCategory === "kra") {
+  if (isAll) {
+    headerRow.innerHTML = `
+      <th style="width: 25%;">Client</th>
+      <th style="width: 20%;">Category</th>
+      <th style="width: 25%;">Username / PIN / Email</th>
+      <th style="width: 25%;">Password</th>
+      <th style="width: 5%;"></th>
+    `;
+  } else if (activePasswordCategory === "kra") {
     headerRow.innerHTML = `
       <th style="width: 35%;">Client</th>
       <th style="width: 35%;">KRA PIN</th>
@@ -3031,6 +3048,35 @@ function renderPasswords() {
   }
 
   container.innerHTML = filtered.map(item => {
+    const cat = item.category || "kra";
+    if (isAll) {
+      return `
+        <tr data-id="${item.id}">
+          <td>
+            <input list="clientDatalist" data-field="client" value="${escapeHtml(item.client)}" placeholder="Client name" />
+          </td>
+          <td>
+            <select data-field="category" class="category-select">
+              <option value="kra" ${cat === "kra" ? "selected" : ""}>KRA PIN</option>
+              <option value="gmail" ${cat === "gmail" ? "selected" : ""}>Gmail</option>
+              <option value="other" ${cat === "other" ? "selected" : ""}>Other</option>
+            </select>
+          </td>
+          <td>
+            <input type="text" data-field="username" value="${escapeHtml(item.username)}" placeholder="Username / PIN / Email" />
+          </td>
+          <td>
+            <div class="password-input-wrapper">
+              <input type="password" data-field="password" value="${escapeHtml(item.password)}" placeholder="Password" />
+              <button type="button" class="password-toggle-btn" title="Toggle visibility">👁</button>
+            </div>
+          </td>
+          <td style="text-align: right;">
+            <button type="button" class="row-delete-btn" title="Delete credential">✕</button>
+          </td>
+        </tr>
+      `;
+    }
     return `
       <tr data-id="${item.id}">
         <td>
@@ -3052,7 +3098,7 @@ function renderPasswords() {
     `;
   }).join("");
 
-  container.querySelectorAll("input").forEach(input => {
+  container.querySelectorAll("input, select").forEach(input => {
     input.addEventListener("change", handlePasswordInput);
   });
 
