@@ -1131,7 +1131,7 @@ main {
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid rgba(228, 222, 211, 0.62);
+  border-bottom: 1px solid rgba(228, 222, 211, 0.12);
 }
 
 .section-header h3 {
@@ -1139,23 +1139,45 @@ main {
   font-size: 1.35rem;
 }
 
+/* Light mode section headers */
 .section-header.overdue {
   background: rgba(246, 227, 225, 0.72);
   color: var(--red);
 }
-
 .section-header.today {
   background: rgba(255, 240, 218, 0.72);
   color: var(--amber);
 }
-
 .section-header.upcoming {
   background: var(--bg-header);
 }
-
 .section-header.completed {
   background: rgba(230, 244, 236, 0.72);
   color: var(--green);
+}
+
+/* Dark mode section headers — replace washed-out light tints with deep, saturated accents */
+[data-theme="dark"] .section-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .section-header.overdue {
+  background: rgba(180, 50, 40, 0.18);
+  color: #f07070;
+}
+[data-theme="dark"] .section-header.today {
+  background: rgba(212, 175, 55, 0.14);
+  color: #d4af37;
+}
+[data-theme="dark"] .section-header.upcoming {
+  background: rgba(255, 255, 255, 0.04);
+  color: #b0b8c8;
+}
+[data-theme="dark"] .section-header.completed {
+  background: rgba(40, 140, 80, 0.14);
+  color: #5bbf8a;
+}
+[data-theme="dark"] .section-count {
+  color: rgba(255,255,255,0.35);
 }
 
 .task-table {
@@ -4428,4 +4450,151 @@ select option,
   }
 }
 
+/* ══════════════════════════════════════════════════════════
+   TABLET  (769px – 1024px) — keep table but tighten columns
+   ══════════════════════════════════════════════════════════ */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .client-cell  { width: 8rem; }
+  .task-cell    { width: 28%; }
+  .assigned-cell{ width: 9rem; }
+  .due-cell     { width: 9rem; }
+  .actions-cell { width: 7.5rem; }
+  .details-cell { display: none; } /* hide details column to save space */
 
+  .section-header h3 { font-size: 1.1rem; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE  (≤ 768px) — full card layout for task rows
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Task board padding ── */
+  #taskBoard { padding: 0 0.5rem; }
+
+  /* ── Section header ── */
+  .section-header {
+    padding: 0.8rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .section-header h3 { font-size: 1rem; }
+  .section-count { font-size: 0.8rem; }
+
+  /* ── Hide traditional table layout ── */
+  .task-table,
+  .task-table thead,
+  .task-table tbody,
+  .task-table th,
+  .task-table td,
+  .task-table tr {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* Hide table header row on mobile */
+  .task-table thead { display: none !important; }
+
+  /* Each row becomes a card */
+  .task-table tbody tr {
+    margin: 0;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+    position: relative;
+  }
+  .task-table tbody tr:last-child { border-bottom: none !important; }
+
+  /* Hide explicit column cells, show as block items */
+  .task-table td {
+    padding: 0.15rem 0 !important;
+    border: none !important;
+    white-space: normal !important;
+  }
+
+  /* CLIENT label hidden (shown as bold in task name) */
+  .client-cell {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    padding-bottom: 0.1rem !important;
+  }
+
+  /* Task name — bigger and bold */
+  .task-cell { font-size: 0.95rem; padding-bottom: 0.3rem !important; }
+
+  /* Assigned row — inline */
+  .assigned-cell {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.55);
+  }
+  .assignee-name { display: inline; font-weight: 600; }
+  .assignee-name::after { content: " "; }
+  .assigned-by {
+    display: inline;
+    font-size: 0.8rem;
+    margin-top: 0;
+  }
+
+  /* Due date */
+  .due-cell {
+    font-size: 0.82rem;
+    padding-bottom: 0.25rem !important;
+  }
+
+  /* Details hidden by default on mobile (saves space) */
+  .details-cell { display: none !important; }
+
+  /* Actions cell — inline row at bottom */
+  .actions-cell {
+    width: 100% !important;
+    text-align: left !important;
+    padding-top: 0.5rem !important;
+  }
+  .row-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .row-actions .icon-button {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.55rem;
+    min-width: 34px;
+    min-height: 34px;
+  }
+
+  /* Assignment filter pills — wrap + scroll */
+  #assignmentFilters {
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.25rem;
+  }
+  .filter-btn { white-space: nowrap; font-size: 0.78rem; }
+
+  /* Heading row */
+  #tasksHeading {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem 0;
+  }
+  #viewTitle { font-size: 1.5rem; }
+  #openTaskCount { font-size: 0.8rem; }
+
+  /* Export / New task buttons */
+  .toolbar { flex-wrap: wrap; gap: 0.4rem; }
+  #newTaskButton, #exportButton { font-size: 0.8rem; padding: 0.45rem 0.8rem; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   EXTRA SMALL PHONES  (≤ 480px)
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .masthead-search { font-size: 0.8rem; }
+  .tab { font-size: 0.72rem; padding: 0.35rem 0.55rem; }
+  .section-header h3 { font-size: 0.9rem; }
+
+  /* Sidebar full width on very small phones */
+  .sidebar { width: 85vw !important; min-width: unset !important; }
+}
