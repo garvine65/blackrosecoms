@@ -4364,12 +4364,15 @@ select option,
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(2px);
-  z-index: 999;
+  z-index: 1050;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.3s ease;
 }
 .sidebar-overlay.active {
+  display: block;
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -4379,18 +4382,14 @@ select option,
   /* Show hamburger */
   .hamburger-btn {
     display: flex;
-  }
-
-  /* Show overlay backdrop */
-  .sidebar-overlay {
-    display: block;
+    z-index: 1101;
   }
 
   /* Sidebar slides off-screen by default */
   .sidebar {
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1000;
+    z-index: 1100;
     box-shadow: none;
   }
 

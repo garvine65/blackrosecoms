@@ -845,22 +845,24 @@ viewToggle.querySelectorAll(".toggle-btn").forEach((button) => {
 
 // Sidebar nav buttons
 document.querySelectorAll(".sidebar-nav-item[data-sidebar-view]").forEach((button) => {
-  button.addEventListener("click", () => {
-    activeView = button.dataset.sidebarView;
-    closeMobileSidebar(); // auto-close on mobile after selecting a view
-    render();
+  button.addEventListener("click", (e) => {
+    const view = button.dataset.sidebarView;
+    if (view) {
+      activeView = view;
+      closeMobileSidebar();
+      render();
+    }
   });
 });
-// Sidebar Files link - no JS needed, it's a plain <a> tag that opens OneDrive
 
 // ── Mobile hamburger sidebar toggle ──────────────────────────────
 function openMobileSidebar() {
   const sidebar = document.getElementById("appSidebar");
   const overlay = document.getElementById("sidebarOverlay");
   const btn = document.getElementById("hamburgerBtn");
-  sidebar.classList.add("sidebar-open");
-  overlay.classList.add("active");
-  btn.setAttribute("aria-expanded", "true");
+  if (sidebar) sidebar.classList.add("sidebar-open");
+  if (overlay) overlay.classList.add("active");
+  if (btn) btn.setAttribute("aria-expanded", "true");
   document.body.classList.add("sidebar-is-open");
 }
 
@@ -868,19 +870,27 @@ function closeMobileSidebar() {
   const sidebar = document.getElementById("appSidebar");
   const overlay = document.getElementById("sidebarOverlay");
   const btn = document.getElementById("hamburgerBtn");
-  sidebar.classList.remove("sidebar-open");
-  overlay.classList.remove("active");
-  btn.setAttribute("aria-expanded", "false");
+  if (sidebar) sidebar.classList.remove("sidebar-open");
+  if (overlay) overlay.classList.remove("active");
+  if (btn) btn.setAttribute("aria-expanded", "false");
   document.body.classList.remove("sidebar-is-open");
 }
 
-document.getElementById("hamburgerBtn").addEventListener("click", () => {
-  const isOpen = document.getElementById("appSidebar").classList.contains("sidebar-open");
-  isOpen ? closeMobileSidebar() : openMobileSidebar();
-});
+const hamburgerBtnEl = document.getElementById("hamburgerBtn");
+if (hamburgerBtnEl) {
+  hamburgerBtnEl.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const sidebar = document.getElementById("appSidebar");
+    const isOpen = sidebar && sidebar.classList.contains("sidebar-open");
+    isOpen ? closeMobileSidebar() : openMobileSidebar();
+  });
+}
 
 // Tap the overlay backdrop to close sidebar
-document.getElementById("sidebarOverlay").addEventListener("click", closeMobileSidebar);
+const sidebarOverlayEl = document.getElementById("sidebarOverlay");
+if (sidebarOverlayEl) {
+  sidebarOverlayEl.addEventListener("click", closeMobileSidebar);
+}
 
 // Also close sidebar when Files link is clicked on mobile
 const sidebarFilesLink = document.getElementById("sidebarFiles");
