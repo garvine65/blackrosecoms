@@ -785,15 +785,45 @@ function render() {
   
   const passwordsHeading = document.querySelector("#passwordsHeading");
   const passwordsView = document.querySelector("#passwordsView");
-  if (passwordsHeading) passwordsHeading.hidden = !isPasswords;
-  if (passwordsView) passwordsView.hidden = !isPasswords;
+  if (passwordsHeading) {
+    passwordsHeading.hidden = !isPasswords;
+    passwordsHeading.style.display = isPasswords ? "" : "none";
+  }
+  if (passwordsView) {
+    passwordsView.hidden = !isPasswords;
+    passwordsView.style.display = isPasswords ? "" : "none";
+  }
 
-  document.querySelector("#meetingsView").hidden = !isMeeting;
-  document.querySelector("#newMeetingButton").hidden = !isMeeting;
-  document.querySelector("#dashboardView").hidden = !isDash;
-  document.querySelector("#workloadView").hidden = !isWorkload;
-  document.querySelector("#unwindView").hidden = !isUnwind;
-  document.getElementById("checklistView").hidden = !isChecklist;
+  const meetingsViewEl = document.querySelector("#meetingsView");
+  if (meetingsViewEl) {
+    meetingsViewEl.hidden = !isMeeting;
+    meetingsViewEl.style.display = isMeeting ? "" : "none";
+  }
+  const newMeetingButtonEl = document.querySelector("#newMeetingButton");
+  if (newMeetingButtonEl) {
+    newMeetingButtonEl.hidden = !isMeeting;
+    newMeetingButtonEl.style.display = isMeeting ? "" : "none";
+  }
+  const dashboardViewEl = document.querySelector("#dashboardView");
+  if (dashboardViewEl) {
+    dashboardViewEl.hidden = !isDash;
+    dashboardViewEl.style.display = isDash ? "" : "none";
+  }
+  const workloadViewEl = document.querySelector("#workloadView");
+  if (workloadViewEl) {
+    workloadViewEl.hidden = !isWorkload;
+    workloadViewEl.style.display = isWorkload ? "" : "none";
+  }
+  const unwindViewEl = document.querySelector("#unwindView");
+  if (unwindViewEl) {
+    unwindViewEl.hidden = !isUnwind;
+    unwindViewEl.style.display = isUnwind ? "" : "none";
+  }
+  const checklistViewEl = document.getElementById("checklistView");
+  if (checklistViewEl) {
+    checklistViewEl.hidden = !isChecklist;
+    checklistViewEl.style.display = isChecklist ? "" : "none";
+  }
 
   if (isTask) {
     renderFilters();
