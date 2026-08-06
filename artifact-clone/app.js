@@ -689,6 +689,16 @@ viewToggle.querySelectorAll(".toggle-btn").forEach((button) => {
   });
 });
 
+// Sidebar nav buttons
+document.querySelectorAll(".sidebar-nav-item[data-sidebar-view]").forEach((button) => {
+  button.addEventListener("click", () => {
+    activeView = button.dataset.sidebarView;
+    render();
+  });
+});
+// Sidebar Files link - no JS needed, it's a plain <a> tag that opens OneDrive
+
+
 assignmentFilters.querySelectorAll(".filter-btn").forEach((button) => {
   button.addEventListener("click", () => {
     assignmentFilter = button.dataset.filter;
@@ -754,6 +764,12 @@ function render() {
     btn.classList.toggle("active", btn.dataset.view === activeView);
   });
 
+  // Sync sidebar active state
+  document.querySelectorAll(".sidebar-nav-item[data-sidebar-view]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.sidebarView === activeView);
+  });
+
+
   const isTask = activeView === "tasks";
   const isMeeting = activeView === "meetings";
   const isDash = activeView === "dashboard";
@@ -807,6 +823,20 @@ function renderFilters() {
 function renderSession() {
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId);
   currentProfileLabel.textContent = activeProfile ? `Signed in as ${activeProfile.name}` : "";
+
+  // Update sidebar profile area
+  const sidebarName = document.getElementById("sidebarProfileName");
+  const sidebarAvatar = document.getElementById("sidebarProfileAvatar");
+  if (sidebarName && activeProfile) {
+    sidebarName.textContent = activeProfile.name.split(" ")[0]; // first name only
+  }
+  if (sidebarAvatar && activeProfile) {
+    if (activeProfile.image) {
+      sidebarAvatar.innerHTML = `<img src="${activeProfile.image}" alt="${escapeHtml(activeProfile.name)}" />`;
+    } else {
+      sidebarAvatar.innerHTML = escapeHtml(activeProfile.name[0] || "?");
+    }
+  }
 }
 
 function renderLogin() {
@@ -977,6 +1007,24 @@ function renderTabs() {
   });
 }
 
+function getTaskMonthKey(task) {
+  const dateStr = task.completedAt || task.completed_at || task.due;
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function getTaskMonthLabel(task) {
+  const dateStr = task.completedAt || task.completed_at || task.due;
+  if (!dateStr) return "Unknown Month";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "Unknown Month";
+  return d.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+}
+
 function renderBoard() {
   viewTitle.textContent = selectedClient;
   const scoped = visibleTasks();
@@ -992,23 +1040,76 @@ function renderBoard() {
 
   taskBoard.innerHTML = groups.map(([key, title, empty]) => renderSection(key, title, empty, scoped)).join("");
   taskBoard.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", handleAction));
+
+  const monthSelect = taskBoard.querySelector("#completedMonthSelect");
+  if (monthSelect) {
+    monthSelect.addEventListener("change", (e) => {
+      selectedCompletedMonth = e.target.value;
+      renderBoard();
+    });
+  }
 }
 
 function renderSection(key, title, empty, scoped) {
   const priorityOrder = { urgent: 0, normal: 1, low: 2 };
-  const rows = scoped
-    .filter((task) => classifyTask(task) === key)
-    .sort((a, b) => {
+  let rows = scoped.filter((task) => classifyTask(task) === key);
+  let monthDropdownHtml = "";
+
+  if (key === "completed") {
+    const monthMap = new Map();
+    const now = getCurrentTime();
+    const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const currentLabel = now.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+    monthMap.set(currentKey, currentLabel);
+
+    rows.forEach((task) => {
+      const k = getTaskMonthKey(task);
+      const lbl = getTaskMonthLabel(task);
+      if (k && !monthMap.has(k)) {
+        monthMap.set(k, lbl);
+      }
+    });
+
+    const sortedMonths = Array.from(monthMap.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+
+    if (!selectedCompletedMonth) {
+      selectedCompletedMonth = currentKey;
+    }
+
+    const optionsHtml = sortedMonths
+      .map(([k, label]) => `<option value="${k}" ${k === selectedCompletedMonth ? "selected" : ""}>${escapeHtml(label)}</option>`)
+      .join("");
+
+    const allSelectedHtml = selectedCompletedMonth === "all" ? "selected" : "";
+    monthDropdownHtml = `
+      <select id="completedMonthSelect" class="completed-month-select" title="Filter completed tasks by month">
+        ${optionsHtml}
+        <option value="all" ${allSelectedHtml}>All Months</option>
+      </select>
+    `;
+
+    if (selectedCompletedMonth !== "all") {
+      rows = rows.filter((task) => getTaskMonthKey(task) === selectedCompletedMonth);
+    }
+
+    rows.sort((a, b) => new Date(b.due) - new Date(a.due));
+  } else {
+    rows.sort((a, b) => {
       const pa = priorityOrder[a.priority] ?? 1;
       const pb = priorityOrder[b.priority] ?? 1;
       if (pa !== pb) return pa - pb;
       return new Date(a.due) - new Date(b.due);
     });
+  }
+
   const clientColumn = selectedClient === "All clients";
 
   return `<article class="task-section">
     <header class="section-header ${key}">
-      <h3>${title}</h3>
+      <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+        <h3>${title}</h3>
+        ${monthDropdownHtml}
+      </div>
       <span class="section-count">${rows.length} ${rows.length === 1 ? "task" : "tasks"}</span>
     </header>
     ${
@@ -1577,9 +1678,37 @@ function renderMeetings() {
   const sorted = [...meetings].sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
 
   if (sorted.length === 0) {
-    meetingsGrid.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">No meetings scheduled yet.</div>`;
+    // Render an intentional empty placeholder card so the view doesn't look broken
+    meetingsGrid.innerHTML = `
+      <div class="meeting-empty-wrapper" style="grid-column:1 / -1">
+        <div class="meeting-empty-card">
+          <div style="font-size:2.2rem">📅</div>
+          <h3>No meetings scheduled</h3>
+          <p>Looks quiet — book a meeting to get things moving.</p>
+          <div style="display:flex;justify-content:center;gap:0.5rem;margin-top:0.75rem;">
+            <button class="primary-button" id="bookMeetingBtn">Book one</button>
+            <button class="outline-button" id="learnMoreMeetings">How meetings work</button>
+          </div>
+        </div>
+      </div>`;
+
+    // Shrink the brand watermark to keep the empty card tidy
+    const bm = document.querySelector('.brand-watermark');
+    if (bm) bm.style.backgroundSize = 'min(48vw,480px)';
+
+    // Wire up the book button to open the schedule dialog
+    setTimeout(() => {
+      const b = document.getElementById('bookMeetingBtn');
+      if (b) b.addEventListener('click', () => openMeetingDialog());
+      const l = document.getElementById('learnMoreMeetings');
+      if (l) l.addEventListener('click', () => alert('Schedule meetings to coordinate tasks and attendees.'));
+    }, 0);
+
     return;
   }
+  // restore watermark sizing when meetings exist
+  const bm = document.querySelector('.brand-watermark');
+  if (bm) { bm.style.backgroundSize = ''; bm.style.opacity = ''; }
 
   meetingsGrid.innerHTML = sorted.map(renderMeetingCard).join("");
   meetingsGrid.querySelectorAll("[data-meeting-action]").forEach((button) => {
@@ -1957,9 +2086,13 @@ function renderWorkload() {
     const overdue = mine.filter(t => classifyTask(t) === "overdue").length;
     const pct = Math.round((mine.length / maxCount) * 100);
     const barCls = overdue > 0 ? "bar-danger" : mine.length > 4 ? "bar-warning" : "bar-ok";
+    // Vacant profile detection (no email or labelled as vacant)
+    const isVacant = !profile.email || (profile.details && profile.details.toLowerCase().includes('vacant'));
     const photo = profile.image
       ? `<img src="${profile.image}" alt="${escapeHtml(profile.name)}" class="workload-avatar" />`
-      : `<span class="profile-placeholder workload-avatar-placeholder">${escapeHtml(profile.name[0])}</span>`;
+      : isVacant
+        ? `<button class="invite-slot-btn" data-profile-id="${profile.id}">+ Invite</button>`
+        : `<span class="profile-placeholder workload-avatar-placeholder">${escapeHtml(profile.name[0])}</span>`;
     return `<div class="workload-card">
       <div class="workload-header">
         ${photo}
@@ -1969,7 +2102,11 @@ function renderWorkload() {
         </div>
         <div class="workload-count-badge">${mine.length}</div>
       </div>
-      <div class="workload-bar-track"><div class="workload-bar ${barCls}" style="width:${pct}%"></div></div>
+      ${mine.length === 0 ? `
+        <div class="all-clear-badge">✓ All clear</div>
+      ` : `
+        <div class="workload-bar-track"><div class="workload-bar ${barCls}" style="width:${pct}%"></div></div>
+      `}
       <div class="workload-task-list">
         ${mine.slice(0, 5).map(t => `<div class="workload-task-item ${classifyTask(t) === "overdue" ? "wl-overdue" : ""}">
           <span class="wl-client">${t.client}</span> ${escapeHtml(t.title.slice(0, 45))}${t.title.length > 45 ? "…" : ""}
@@ -2957,7 +3094,17 @@ function renderChecklistList() {
     const hod = allItems.filter(i => i.hodStatus === "confirmed").length;
     const pct = total ? Math.round((done / total) * 100) : 0;
     const circumference = 2 * Math.PI * 22;
-    const offset = circumference - (pct / 100) * circumference;
+    // Determine ring offset and color class so 0% still shows a small red arc
+    let ringOffset;
+    let ringClass = "";
+    if (pct === 0) {
+      ringClass = "danger"; // red small arc
+      ringOffset = circumference - 6; // show a small hint arc
+    } else {
+      ringOffset = circumference - (pct / 100) * circumference;
+      if (pct < 50) ringClass = "warn"; // amber/gold for partial
+      else ringClass = "ok"; // green for healthy
+    }
 
     return `<div class="cl-card" data-cl-id="${cl.id}">
       <div class="cl-card-top">
@@ -2969,9 +3116,9 @@ function renderChecklistList() {
         <div class="cl-ring-wrap">
           <svg width="56" height="56" viewBox="0 0 56 56">
             <circle class="cl-ring-bg" cx="28" cy="28" r="22"/>
-            <circle class="cl-ring-fill" cx="28" cy="28" r="22"
+            <circle class="cl-ring-fill ${ringClass}" cx="28" cy="28" r="22"
               stroke-dasharray="${circumference}"
-              stroke-dashoffset="${offset}"/>
+              stroke-dashoffset="${ringOffset}"/>
           </svg>
           <div class="cl-ring-label">${pct}%</div>
         </div>

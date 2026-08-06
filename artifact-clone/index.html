@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Black Rose Consultancy - Client Task Tracker</title>
     <meta name="description" content="Black Rose Consultancy internal client task & deadline tracker. Secure, team-only access." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
     <!-- Prevent flash of wrong theme -->
     <script>
       (function () {
-        const saved = localStorage.getItem('br-theme') || 'light';
+        const saved = localStorage.getItem('br-theme') || 'dark';
         document.documentElement.setAttribute('data-theme', saved);
       })();
     </script>
@@ -91,25 +94,106 @@
     </section>
 
     <div class="app-shell locked">
-      <div class="brand-watermark" aria-hidden="true"></div>
+      <!-- ══ SIDEBAR NAV ══════════════════════════════════════════ -->
+      <aside class="sidebar" id="appSidebar">
+        <div class="sidebar-logo">
+          <img src="./assets/logo.jpeg" alt="Black Rose" class="sidebar-logo-img" data-logo />
+          <div class="sidebar-brand">
+            <span class="sidebar-brand-name">BLACK ROSE</span>
+            <span class="sidebar-brand-sub">CONSULTANCY</span>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Main navigation">
+          <button class="sidebar-nav-item" data-sidebar-view="dashboard" id="sidebarOverview">
+            <span class="sidebar-nav-icon">🧭</span>
+            <span class="sidebar-nav-label">Overview</span>
+          </button>
+          <button class="sidebar-nav-item active" data-sidebar-view="tasks" id="sidebarTasks">
+            <span class="sidebar-nav-icon">📋</span>
+            <span class="sidebar-nav-label">Tasks</span>
+          </button>
+          <button class="sidebar-nav-item" data-sidebar-view="meetings" id="sidebarMeetings">
+            <span class="sidebar-nav-icon">📅</span>
+            <span class="sidebar-nav-label">Meetings</span>
+          </button>
+          <button class="sidebar-nav-item" data-sidebar-view="dashboard" id="sidebarDashboard">
+            <span class="sidebar-nav-icon">👥</span>
+            <span class="sidebar-nav-label">Clients</span>
+          </button>
+          <button class="sidebar-nav-item" data-sidebar-view="workload" id="sidebarWorkload">
+            <span class="sidebar-nav-icon">📊</span>
+            <span class="sidebar-nav-label">Workload</span>
+          </button>
+          <button class="sidebar-nav-item" data-sidebar-view="checklist" id="sidebarChecklist">
+            <span class="sidebar-nav-icon">☑️</span>
+            <span class="sidebar-nav-label">Checklists</span>
+          </button>
+          <a class="sidebar-nav-item sidebar-nav-link" href="https://blackrosecoke-my.sharepoint.com/:f:/r/personal/diane_meria_blackrose_co_ke/Documents/Black%20Rose%202026/Clients/Accounting?e=5%3a765b0745b1874e948f16b25f39c96e63&sharingv2=true&fromShare=true&at=9" target="_blank" rel="noopener noreferrer" id="sidebarFiles">
+            <span class="sidebar-nav-icon">📂</span>
+            <span class="sidebar-nav-label">Files</span>
+            <span class="sidebar-nav-ext">↗</span>
+          </a>
+          <button class="sidebar-nav-item unwind-nav-item" data-sidebar-view="unwind" id="sidebarUnwind">
+            <span class="sidebar-nav-icon">🌙</span>
+            <span class="sidebar-nav-label">Unwind</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <button class="sidebar-nav-item settings-nav-item" id="sidebarSettingsBtn">
+            <span class="sidebar-nav-icon">⚙️</span>
+            <span class="sidebar-nav-label">Settings</span>
+          </button>
+          <div class="sidebar-profile" id="sidebarProfileArea">
+            <div class="sidebar-profile-avatar" id="sidebarProfileAvatar"></div>
+            <div class="sidebar-profile-info">
+              <span class="sidebar-profile-name" id="sidebarProfileName"></span>
+              <span class="sidebar-profile-role">Partner</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ══ MAIN CONTENT AREA ══════════════════════════════════ -->
+      <div class="sidebar-content">
+
 
       <header class="masthead">
-        <div>
-          <h1>Black Rose Consultancy</h1>
-          <p>Client task &amp; deadline tracker</p>
+        <!-- Search bar (left/centre) -->
+        <div class="masthead-search-wrap">
+          <span class="masthead-search-icon">🔍</span>
+          <input class="masthead-search" type="search" placeholder="Search tasks, clients, meetings…" aria-label="Search" id="mastheadSearch" />
+          <span class="masthead-search-kbd">⌘ K</span>
         </div>
-        <div class="session-info">
-          <span id="currentProfileLabel"></span>
-          <time id="todayLabel"></time>
-          <div style="display:flex;align-items:center;gap:0.5rem;">
-            <button class="outline-button compact-button" id="switchProfileButton">Switch profile</button>
+
+        <!-- Right cluster: bell + profile -->
+        <div class="masthead-right">
+          <button class="masthead-bell" id="notifyButton" title="Enable notifications" aria-label="Notifications">
+            🔔
+            <span class="masthead-bell-badge" id="mastheadBadge" hidden>0</span>
+          </button>
+
+          <!-- Profile chip -->
+          <div class="masthead-profile-chip" id="mastheadProfileChip">
+            <div class="masthead-profile-avatar" id="mastheadAvatar">G</div>
+            <div class="masthead-profile-text">
+              <span class="masthead-profile-name" id="mastheadProfileName">Gregory Nyataige</span>
+              <span class="masthead-profile-role">Partner</span>
+            </div>
+            <button class="masthead-profile-switch outline-button compact-button" id="switchProfileButton" title="Switch profile">⌄</button>
             <button class="theme-toggle" id="themeToggleBtn" title="Toggle dark / light mode" aria-label="Toggle theme">🌙</button>
           </div>
         </div>
+
+        <!-- Hidden elements kept for JS compatibility -->
+        <span id="currentProfileLabel" style="display:none;"></span>
+        <time id="todayLabel" style="display:none;"></time>
       </header>
 
       <main>
-        <div class="view-toggle-wrapper">
+        <!-- hidden view toggle kept for JS compatibility -->
+        <div class="view-toggle-wrapper" style="display:none;" aria-hidden="true">
           <div class="view-toggle" id="viewToggle">
             <button class="toggle-btn active" data-view="tasks">Tasks Board</button>
             <button class="toggle-btn" data-view="meetings">Meetings Schedule</button>
@@ -131,9 +215,8 @@
         <section class="toolbar" aria-label="Task actions">
           <button class="primary-button" id="newTaskButton">+ New task</button>
           <button class="primary-button" id="newMeetingButton" hidden>+ Schedule meeting</button>
-          <button class="outline-button" id="notifyButton">Enable notifications</button>
           <button class="outline-button" id="exportButton" title="Export summary"> Export</button>
-          <a href="https://blackrosecoke-my.sharepoint.com/:f:/r/personal/diane_meria_blackrose_co_ke/Documents/Black%20Rose%202026/Clients/Accounting?e=5%3a765b0745b1874e948f16b25f39c96e63&sharingv2=true&fromShare=true&at=9" target="_blank" class="outline-button" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none; gap: 0.4rem;" title="Open OneDrive client folders">📂 Client Files</a>
+
         </section>
 
         <nav class="tabs" id="clientTabs" aria-label="Clients"></nav>
@@ -412,6 +495,7 @@
           </div>
         </div>
       </main>
+      </div><!-- /.sidebar-content -->
     </div>
 
     <dialog id="taskDialog">
