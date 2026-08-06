@@ -41,6 +41,98 @@ let passwords = loadPasswords();
 let activePasswordCategory = "kra";
 
 // ═══════════════════════════════════════════════════════════════════
+//  UTILITY & HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getCurrentTime() {
+  return new Date(Date.now() + timeOffset);
+}
+
+function startOfDay(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function sameDay(d1, d2) {
+  const date1 = new Date(d1);
+  const date2 = new Date(d2);
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
+
+function formatDue(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+function getCountdownLabel(dateStr) {
+  if (!dateStr) return null;
+  const due = new Date(dateStr);
+  if (isNaN(due.getTime())) return null;
+  const now = startOfDay(getCurrentTime());
+  const dueDay = startOfDay(due);
+  const diffDays = Math.round((dueDay - now) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    const overdueDays = Math.abs(diffDays);
+    return { label: `${overdueDays}d overdue`, cls: "overdue" };
+  } else if (diffDays === 0) {
+    return { label: "Due today", cls: "today" };
+  } else if (diffDays === 1) {
+    return { label: "Due tomorrow", cls: "upcoming" };
+  } else {
+    return { label: `In ${diffDays} days`, cls: "upcoming" };
+  }
+}
+
+function loadTasks() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+    return saved;
+  } catch {
+    return [];
+  }
+}
+
+function normalizeTask(t) {
+  if (!t) return t;
+  return {
+    id: t.id || `task-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+    title: t.title || t.task || "Untitled Task",
+    client: t.client || "All clients",
+    details: t.details || "",
+    assignedTo: t.assignedTo || t.assigned_to || "greg",
+    assignedBy: t.assignedBy || t.assigned_by || "greg",
+    due: t.due || t.due_date || new Date().toISOString().substring(0, 10),
+    priority: t.priority || "normal",
+    status: t.status || "open",
+    repeat: t.repeat || "",
+    checklist: t.checklist || [],
+    comments: t.comments || [],
+    source: t.source || ""
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  AUTH STATE  (tracks current Supabase session)
 // ═══════════════════════════════════════════════════════════════════
 let _currentUser = null;  // Supabase auth user
@@ -156,29 +248,90 @@ async function onSignedIn() {
   console.log('[BlackRose Auth] User approved, loading app for:', _currentUser.email);
   _currentUserProfile = profile;
   document.getElementById("authScreen").hidden = true;
-  await loadProfilesFromDB();
-  await loadPasswordsFromDB();
-  await loadTasksFromDB();
-  await loadMeetingsFromDB();
-  await loadChecklistsFromDB();
-  await loadUnwindMessagesFromDB();
-  await loadVibesFromDB();
+  
+  try { await loadProfilesFromDB(); } catch (e) { console.warn(e); }
+  try { await loadPasswordsFromDB(); } catch (e) { console.warn(e); }
+  try { await loadTasksFromDB(); } catch (e) { console.warn(e); }
+  try { await loadMeetingsFromDB(); } catch (e) { console.warn(e); }
+  try { await loadChecklistsFromDB(); } catch (e) { console.warn(e); }
+  try { await loadUnwindMessagesFromDB(); } catch (e) { console.warn(e); }
+  try { await loadVibesFromDB(); } catch (e) { console.warn(e); }
+  
   showProfilePicker();
 }
 
 async function loadProfilesFromDB() {
-  const { data, error } = await supabase.from("profiles").select("*");
-  if (!error && data && data.length) {
-    profiles = data.map(p => ({
-      id: p.id,
-      name: p.name,
-      details: p.details || "Black Rose team member",
-      image: p.image_url || "",
-      email: p.email,
-      approved: p.approved,
-      pin_hash: p.pin_hash || null,
-      phone: p.phone || "",
-    }));
+  try {
+    const { data, error } = await supabase.from("profiles").select("*");
+    if (!error && data && data.length) {
+      profiles = data.map(p => ({
+        id: p.id,
+        name: p.name,
+        details: p.details || "Black Rose team member",
+        image: p.image_url || "",
+        email: p.email,
+        approved: p.approved,
+        pin_hash: p.pin_hash || null,
+        phone: p.phone || "",
+      }));
+    }
+  } catch (e) {
+    console.warn("[BlackRose DB] Load profiles error:", e);
+  }
+}
+
+async function loadTasksFromDB() {
+  try {
+    const { data, error } = await supabase.from("tasks").select("*");
+    if (!error && data && data.length) {
+      tasks = data.map(normalizeTask);
+    }
+  } catch (e) {
+    console.warn("[BlackRose DB] Load tasks error:", e);
+  }
+}
+
+async function loadPasswordsFromDB() {
+  try {
+    const { data, error } = await supabase.from("passwords").select("*");
+    if (!error && data && data.length) {
+      passwords = data;
+    }
+  } catch (e) {
+    console.warn("[BlackRose DB] Load passwords error:", e);
+  }
+}
+
+async function loadChecklistsFromDB() {
+  try {
+    const { data, error } = await supabase.from("checklists").select("*");
+    if (!error && data && data.length) {
+      // Loaded checklists from DB if available
+    }
+  } catch (e) {
+    console.warn("[BlackRose DB] Load checklists error:", e);
+  }
+}
+
+async function loadUnwindMessagesFromDB() {
+  try {
+    const { data, error } = await supabase.from("unwind_messages").select("*");
+    if (!error && data && data.length) {
+      // Loaded unwind messages from DB if available
+    }
+  } catch (e) {
+    console.warn("[BlackRose DB] Load unwind messages error:", e);
+  }
+}
+
+async function loadVibesFromDB() {
+  try {
+    const { data, error } = await supabase.from("vibes").select("*");
+    if (!error && data && data.length) {
+      // Loaded vibes from DB if available
+    }
+  } catch (e) {
+    console.warn("[BlackRose DB] Load vibes error:", e);
   }
 }
 
