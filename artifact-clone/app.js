@@ -776,12 +776,12 @@ function render() {
   const isWorkload = activeView === "workload";
   const isUnwind = activeView === "unwind";
   const isChecklist = activeView === "checklist";
-  const isPasswords = isTask && selectedClient === "Passwords";
+  const isPasswords = activeView === "passwords";
 
   clientTabs.style.display = isTask ? "" : "none";
-  tasksHeading.style.display = isTask && !isPasswords ? "" : "none";
-  taskBoard.style.display = isTask && !isPasswords ? "" : "none";
-  newTaskButton.style.display = isTask && !isPasswords ? "" : "none";
+  tasksHeading.style.display = isTask ? "" : "none";
+  taskBoard.style.display = isTask ? "" : "none";
+  newTaskButton.style.display = isTask ? "" : "none";
   
   const passwordsHeading = document.querySelector("#passwordsHeading");
   const passwordsView = document.querySelector("#passwordsView");
@@ -1016,15 +1016,15 @@ async function saveProfile(event) {
 }
 
 function renderTabs() {
-  const tabList = [...clients, "Passwords"];
+  const tabList = [...clients];
   clientTabs.innerHTML = tabList
     .map((client) => {
       const active = client === selectedClient ? " active" : "";
-      const count = client === "Passwords" ? 0 : openTasksFor(client);
+      const count = openTasksFor(client);
       return `<button class="tab${active}" data-client="${client}">
         ${count ? '<span class="dot"></span>' : ""}
         <span>${client}</span>
-        ${client !== "Passwords" ? `<span class="count">${count}</span>` : ""}
+        <span class="count">${count}</span>
       </button>`;
     })
     .join("");
