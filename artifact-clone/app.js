@@ -30,6 +30,7 @@ let profiles = [...defaultProfiles];
 let activeProfileId = "";
 let assignmentFilter = "all";
 let activeView = "tasks";
+let selectedCompletedMonth = "";
 
 const passwordStorageKey = "blackrose-client-passwords";
 const defaultPasswords = [
