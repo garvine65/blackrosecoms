@@ -134,12 +134,14 @@ alter table public.vibe_votes enable row level security;
 create policy "All access to authenticated users" on public.vibe_votes for all to authenticated using (true);
 
 -- 9. Monthly Checklists Table
-create table public.monthly_checklists (
+create table if not exists public.monthly_checklists (
   id text primary key,
   data text not null,
   created_at timestamptz default now()
 );
 
 alter table public.monthly_checklists enable row level security;
-create policy "All access to authenticated users" on public.monthly_checklists for all to authenticated using (true);
+drop policy if exists "All access to monthly_checklists" on public.monthly_checklists;
+create policy "All access to monthly_checklists" on public.monthly_checklists for all using (true) with check (true);
+
 

@@ -31,6 +31,7 @@ let activeProfileId = "";
 let assignmentFilter = "all";
 let activeView = "tasks";
 let selectedCompletedMonth = "";
+let searchQuery = "";
 
 const passwordStorageKey = "blackrose-client-passwords";
 const defaultPasswords = [
@@ -255,6 +256,7 @@ async function onSignedIn() {
   try { await loadTasksFromDB(); } catch (e) { console.warn(e); }
   try { await loadMeetingsFromDB(); } catch (e) { console.warn(e); }
   try { await loadChecklistsFromDB(); } catch (e) { console.warn(e); }
+  try { initChecklistRealtime(); } catch (e) { console.warn(e); }
   try { await loadUnwindMessagesFromDB(); } catch (e) { console.warn(e); }
   try { await loadVibesFromDB(); } catch (e) { console.warn(e); }
   
@@ -303,31 +305,20 @@ async function loadPasswordsFromDB() {
   }
 }
 
-async function loadChecklistsFromDB() {
-  try {
-    const { data, error } = await supabase.from("checklists").select("*");
-    if (!error && data && data.length) {
-      // Loaded checklists from DB if available
-    }
-  } catch (e) {
-    console.warn("[BlackRose DB] Load checklists error:", e);
-  }
-}
-
 async function loadUnwindMessagesFromDB() {
   try {
-    const { data, error } = await supabase.from("unwind_messages").select("*");
+    const { data, error } = await supabase.from("chat_messages").select("*");
     if (!error && data && data.length) {
-      // Loaded unwind messages from DB if available
+      // Loaded chat messages from DB if available
     }
   } catch (e) {
-    console.warn("[BlackRose DB] Load unwind messages error:", e);
+    console.warn("[BlackRose DB] Load chat messages error:", e);
   }
 }
 
 async function loadVibesFromDB() {
   try {
-    const { data, error } = await supabase.from("vibes").select("*");
+    const { data, error } = await supabase.from("vibe_votes").select("*");
     if (!error && data && data.length) {
       // Loaded vibes from DB if available
     }
@@ -931,6 +922,24 @@ function visibleTasks() {
   } else if (assignmentFilter === "to-others") {
     filtered = filtered.filter((task) => task.assignedTo !== activeProfileId);
   }
+
+  if (searchQuery) {
+    filtered = filtered.filter((task) => {
+      const client = (task.client || "").toLowerCase();
+      const title = (task.task || "").toLowerCase();
+      const details = (task.details || "").toLowerCase();
+      const assignee = getProfile(task.assignedTo).name.toLowerCase();
+      const assigner = getProfile(task.assignedBy).name.toLowerCase();
+      return (
+        client.includes(searchQuery) ||
+        title.includes(searchQuery) ||
+        details.includes(searchQuery) ||
+        assignee.includes(searchQuery) ||
+        assigner.includes(searchQuery)
+      );
+    });
+  }
+
   return filtered;
 }
 
@@ -1905,8 +1914,16 @@ function updateNotifications() {
 }
 
 function renderMeetings() {
-  openMeetingCount.textContent = `${meetings.length} upcoming ${meetings.length === 1 ? "meeting" : "meetings"}`;
-  const sorted = [...meetings].sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+  let list = meetings;
+  if (searchQuery) {
+    list = list.filter((m) => {
+      const title = (m.title || "").toLowerCase();
+      const desc = (m.description || "").toLowerCase();
+      return title.includes(searchQuery) || desc.includes(searchQuery);
+    });
+  }
+  openMeetingCount.textContent = `${list.length} upcoming ${list.length === 1 ? "meeting" : "meetings"}`;
+  const sorted = [...list].sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
 
   if (sorted.length === 0) {
     // Render an intentional empty placeholder card so the view doesn't look broken
@@ -3010,9 +3027,18 @@ function renderPasswords() {
   if (!container || !headerRow) return;
 
   const isAll = activePasswordCategory === "all" || !activePasswordCategory;
-  const filtered = isAll
+  let filtered = isAll
     ? passwords
     : passwords.filter(p => (p.category || "").toLowerCase() === activePasswordCategory.toLowerCase());
+
+  if (searchQuery) {
+    filtered = filtered.filter(p => {
+      const client = (p.client || "").toLowerCase();
+      const user = (p.username || "").toLowerCase();
+      const cat = (p.category || "").toLowerCase();
+      return client.includes(searchQuery) || user.includes(searchQuery) || cat.includes(searchQuery);
+    });
+  }
 
   const categoryLabel = isAll
     ? "All Passwords"
@@ -3228,26 +3254,68 @@ function persistChecklists() {
 async function loadChecklistsFromDB() {
   try {
     const { data, error } = await supabase.from("monthly_checklists").select("*");
-    if (!error && data && data.length) {
-      monthlyChecklists = data.map(row => JSON.parse(row.data));
+    if (!error && data) {
+      if (data.length > 0) {
+        monthlyChecklists = data.map(row => (typeof row.data === "string" ? JSON.parse(row.data) : row.data));
+        persistChecklists();
+      } else {
+        monthlyChecklists = loadChecklists();
+      }
+      renderChecklists();
     } else {
+      if (error) {
+        console.warn("[BlackRose DB] Load checklists error:", error.message || error);
+      }
       monthlyChecklists = loadChecklists();
+      renderChecklists();
     }
-  } catch {
+  } catch (e) {
+    console.warn("[BlackRose DB] Load checklists exception:", e);
     monthlyChecklists = loadChecklists();
+    renderChecklists();
   }
 }
 
 async function saveChecklistToDB(cl) {
   try {
-    await supabase.from("monthly_checklists").upsert([{ id: cl.id, data: JSON.stringify(cl) }]);
-  } catch { /* graceful: localStorage is source of truth */ }
+    const { error } = await supabase.from("monthly_checklists").upsert([{ id: cl.id, data: JSON.stringify(cl) }]);
+    if (error) {
+      console.error("[BlackRose DB] Save checklist error:", error.message || error);
+    } else {
+      console.log("[BlackRose DB] Saved checklist to Supabase:", cl.id);
+    }
+  } catch (e) {
+    console.error("[BlackRose DB] Save checklist exception:", e);
+  }
 }
 
 async function deleteChecklistFromDB(id) {
   try {
-    await supabase.from("monthly_checklists").delete().eq("id", id);
-  } catch {}
+    const { error } = await supabase.from("monthly_checklists").delete().eq("id", id);
+    if (error) {
+      console.error("[BlackRose DB] Delete checklist error:", error.message || error);
+    }
+  } catch (e) {
+    console.error("[BlackRose DB] Delete checklist exception:", e);
+  }
+}
+
+function initChecklistRealtime() {
+  try {
+    supabase
+      .channel("monthly_checklists_realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "monthly_checklists" },
+        (payload) => {
+          console.log("[BlackRose DB] Realtime event on monthly_checklists:", payload);
+          loadChecklistsFromDB();
+        }
+      )
+      .subscribe();
+  } catch (e) {
+    console.warn("[BlackRose DB] Realtime subscription error:", e);
+  }
 }
 
 // ── Template helper ───────────────────────────────────────────────
