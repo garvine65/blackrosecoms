@@ -3179,54 +3179,1572 @@ const CL_ROW_CLASSES = [
 // ── Pre-built Templates ───────────────────────────────────────────
 const CL_TEMPLATES = [
   {
-    id: "tpl-law-firm",
-    name: "Law Firm Monthly Checklist",
-    clientTypes: ["AMM Law"],
-    sections: [
-      { name: "Billing & Revenue", subCategories: ["Disbursements","Disbursements","Disbursements","Invoice generation","Invoice generation","Invoice generation","Invoice generation","Revenue recognition","Revenue recognition","Revenue recognition","Revenue recognition","Revenue recognition","Revenue recognition","Revenue recognition"], items: ["Ensure all disbursements (receipts, stamps) are captured","Ensure disbursements are correctly coded to client/matter and supported by receipts","Reconcile disbursements ledger to supporting invoices and receipts","Raise all invoices for time and disbursements billed this month","Confirm invoices are approved by the responsible partner before dispatch","Confirm invoice terms, client reference, and VAT treatment are correct on each invoice","Issue invoices to clients and record in the billing register against each matter","Post revenue for invoices raised in the billing ledger","Accrue unbilled time for matters where work is substantially complete but not yet invoiced","Reconcile total fees billed vs fees collected vs WIP movement for the month","Confirm all invoice receipts are posted and allocated correctly in the ledger","Ensure any credit notes issued are authorised and correctly posted","Review WIP aging and flag stale unbilled matters to the partner","Review billing register for completeness and accuracy"] },
-      { name: "Client Trust / Ledger Accounts", subCategories: ["Trust reconciliation","Trust reconciliation","Trust reconciliation","Client ledger","Client ledger","Client ledger","Client ledger","Client ledger","Client ledger","Client ledger","Client ledger"], items: ["Reconcile each client trust/ledger account balance to the trust bank statement","Confirm aggregate of all individual client ledger balances equals the trust bank balance","Ensure no client ledger goes into debit (negative balance) — flag immediately","Post all trust receipts and payments to the correct client matter","Confirm all client receipts have been properly identified and allocated","Ensure all disbursements paid from trust are authorised and receipted","Reconcile client trust receipts to bank deposit records","Confirm all transfers between trust and operating accounts are authorised","Reconcile all credit card receipts from clients to the trust ledger","Review all client ledger accounts for unallocated funds","Ensure trust accounting reports are printed and retained for the month"] },
-      { name: "Cash & Bank", subCategories: ["Bank reconciliation","Bank reconciliation","Bank reconciliation","Bank reconciliation","Cash management","Cash management","Cash management","Cash management","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash"], items: ["Prepare and sign off bank reconciliation for the operating account","Prepare and sign off bank reconciliation for the trust account","Review and clear all outstanding reconciling items older than 30 days","Confirm all bank charges and interest are posted","Prepare a weekly cash flow forecast for the upcoming month","Review bank balances and flag any shortfalls to management","Confirm all inter-bank transfers are reconciled and authorised","Ensure all direct debits and standing orders are accounted for in the ledger","Count petty cash and prepare petty cash reconciliation","Ensure all petty cash vouchers are signed and filed","Replenish petty cash and record the journal entry","Confirm petty cash float does not exceed approved limit","Post petty cash expenditure by category","Review petty cash for unusual or unapproved items","Ensure petty cash custodian has signed the reconciliation","File petty cash reconciliation with supporting receipts"] },
-      { name: "Expenditure & Cost Control", subCategories: ["Payables","Payables","Payables","Cost review","Cost review","Cost review","Cost review","Cost review","Cost review"], items: ["Review all supplier invoices received and post to the accounts payable ledger","Confirm all invoices are authorised for payment","Prepare payment run and obtain approval before processing","Review overhead costs against budget and flag variances above 10%","Confirm all staff expense claims are supported and authorised","Post staff expense claims to the correct cost centre","Review subscriptions, licenses, and retainers for the month","Reconcile electricity, internet, and utilities to contracts","Identify and investigate any cost items not in the approved budget"] },
-      { name: "Advances & Disbursement Float", subCategories: ["Advances","Advances","Advances","Float management","Float management","Float management","Float management","Float management"], items: ["Review all outstanding staff advances and confirm repayment status","Ensure all advances have supporting documentation and authorisation","Reconcile advances ledger to the general ledger","Review disbursement float balance and reconcile to the sub-ledger","Ensure all disbursements paid from float are properly receipted","Reconcile float replenishment requests to supporting documents","Confirm no float balance exceeds authorised limits","Post all float transactions to the accounting system"] },
-      { name: "Receivables", subCategories: ["Debtors","Debtors","Debtors","Debtors","Collections","Collections","Collections","Collections"], items: ["Prepare debtors aging report for the month","Review all balances outstanding over 60 days and escalate","Issue statements to all clients with outstanding balances","Reconcile debtors ledger to the general ledger control account","Follow up on all debtors outstanding over 30 days","Record all collections received and post to the correct client account","Confirm all post-dated cheques have been banked on the due date","Update the collections tracker and report to management"] },
-      { name: "Payables", subCategories: ["Creditors","Creditors","Creditors","Creditors","Payments","Payments","Payments","Payments","Payments"], items: ["Prepare creditors aging report for the month","Confirm all supplier statements have been received and reconciled","Ensure GRN/delivery notes are matched to invoices before payment","Review all payables for disputed items and resolve","Process approved payment run via bank","Ensure all EFT payments are supported by authorised payment schedules","Confirm all cheque payments are dual-authorised","Reconcile creditors ledger to the general ledger","Confirm all accruals for month-end have been posted"] },
-      { name: "Payroll & HR Costs", subCategories: ["Payroll","Payroll","Payroll","Payroll","PAYE & NSSF","PAYE & NSSF","PAYE & NSSF","PAYE & NSSF","PAYE & NSSF"], items: ["Confirm headcount for the month with HR","Process payroll for all permanent and contract staff","Obtain payroll approval from the Managing Director/Partner","Post payroll journals to the accounting system","Calculate and confirm PAYE deductions per employee","Prepare PAYE returns and file on iTax by the 9th","Remit NSSF contributions by the 9th of the month","Remit NHIF contributions by the 9th of the month","Reconcile payroll ledger to payroll register and bank payments"] },
-      { name: "Tax & Regulatory Compliance", subCategories: ["VAT","VAT","PAYE","PAYE","Withholding tax","Withholding tax","Annual"], items: ["Prepare VAT workings from the ledger — input vs output tax","File VAT return on iTax and remit by the 20th","Confirm PAYE has been filed and paid","Reconcile PAYE ledger to payroll","Prepare withholding tax certificates for suppliers subject to WHT","File and remit withholding tax by the 20th","Confirm any other statutory returns due for the month are filed"] },
-      { name: "Budget & Management Reporting", subCategories: ["Reporting","Reporting","Reporting","Reporting","Reporting"], items: ["Prepare month-end management accounts (P&L, Balance Sheet, Cash Flow)","Compare actuals vs budget and prepare variance commentary","Circulate management pack to partners by the 5th of the following month","Update rolling cash flow forecast for the next 3 months","File all month-end working papers and supporting documents"] },
-      { name: "Governance & Operations", subCategories: ["Compliance","Compliance","Filing","Filing","Filing","Filing"], items: ["Confirm all signed financial authorities are current and on file","Review access rights to the accounting system — flag any changes needed","Ensure all supplier contracts and retainers are filed and current","File all bank correspondence and statements received this month","Archive month-end reports in the shared drive","Confirm insurance policies are current and premiums paid"] }
+    "id": "tpl-adh",
+    "name": "ADH Monthly Checklist",
+    "clientTypes": [
+      "ADH"
+    ],
+    "sections": [
+      {
+        "name": "Income (Statement of Activities)",
+        "subCategories": [
+          "Post donation and fundraising income, confirm against receipts",
+          "Accrue any earned but uninvoiced income (e.g. milestone-based grants)",
+          "Record interest income and any forex gains on foreign currency receipts",
+          "Reconcile income by programme/project code to grant agreements",
+          "Confirm restricted vs unrestricted income split is correctly coded"
+        ],
+        "items": [
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending"
+        ]
+      },
+      {
+        "name": "Expenditure (Statement of Activities)",
+        "subCategories": [
+          "Ensure all invoices and payment vouchers are posted and approved",
+          "Verify payroll and staff costs allocated correctly to programme/admin",
+          "Post accruals for goods/services received but not yet invoiced",
+          "Review prepayments and release appropriate portion to expense",
+          "Confirm shared costs (rent, utilities) are apportioned across cost centres",
+          "Check for duplicate payments or unapproved expenditure",
+          "Compare expenditure to budget line items; document variances above 10%",
+          "Check for accuracy in coding for each expenditure per grant",
+          "Have you done an FX valuation",
+          "Have you submitted payment vouchers for signing to Chao"
+        ],
+        "items": [
+          "Complete",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending"
+        ]
+      },
+      {
+        "name": "Balance Sheet Items",
+        "subCategories": [
+          "Reconcile all bank accounts and confirm closing cash balances",
+          "Submit bank reconciliations to Chao for signature",
+          "Update fixed asset register — additions, disposals, monthly depreciation",
+          "Confirm petty cash count matches petty cash ledger balance",
+          "Verify deferred income balance reflects unspent restricted grant funds",
+          "Review fund balances — restricted, unrestricted, designated",
+          "Prepare and review trial balance; confirm it is in balance"
+        ],
+        "items": [
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending"
+        ]
+      },
+      {
+        "name": "Advances",
+        "subCategories": [
+          "Print advances register and confirm all open balances per staff/partner",
+          "Follow up on all advances outstanding beyond the approved clearance period",
+          "Review and post retirement/liquidation documents submitted this month",
+          "Confirm no new advance issued to staff with an unretired prior advance",
+          "Reconcile advances to implementing partners against sub-grant agreements",
+          "Flag advances older than 90 days to management for escalation",
+          "Ensure advances ledger balance agrees to balance sheet advances line"
+        ],
+        "items": [
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending"
+        ]
+      },
+      {
+        "name": "Receivables",
+        "subCategories": [
+          "Generate aged receivables report and review balances by donor/partner",
+          "Follow up on overdue grant reimbursements and donor invoices",
+          "Post all cash received against open receivable items",
+          "Identify any receivables at risk of non-collection; flag for provision",
+          "Confirm interproject or inter-fund receivables are matched and will clear",
+          "Reconcile receivables ledger total to balance sheet receivables line"
+        ],
+        "items": [
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending"
+        ]
+      },
+      {
+        "name": "Payables",
+        "subCategories": [
+          "Generate aged payables report; review all balances by vendor/creditor",
+          "Confirm all approved invoices due this month are paid or accrued",
+          "Reconcile supplier statements to the payables ledger for key vendors",
+          "Review statutory payables — VAT, WHT — and confirm remittance",
+          "Check for any disputed invoices or items on hold; document reason",
+          "Reconcile payables ledger total to balance sheet payables line"
+        ],
+        "items": [
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending"
+        ]
+      },
+      {
+        "name": "ALL",
+        "subCategories": [
+          "Have you done an FX valuation",
+          "Have you locked the accounting period"
+        ],
+        "items": [
+          "Pending",
+          "Pending"
+        ]
+      },
+      {
+        "name": "Programme & Grants",
+        "subCategories": [
+          "Submit interim financial reports due to funders this month",
+          "Update grant tracking register with receipts and expenditures",
+          "Review burn rates per active grant and flag underspend or overspend",
+          "Confirm invoices from implementing partners are received and approved",
+          "Archive supporting documents for all grant transactions",
+          "Update cash flow forecast and pipeline tracker",
+          "Update grant report with expenditure"
+        ],
+        "items": [
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending"
+        ]
+      },
+      {
+        "name": "Governance & Compliance",
+        "subCategories": [
+          "Review outstanding statutory filings or compliance deadlines",
+          "Review risk register and flag new financial risks to management",
+          "Ensure board/committee decisions from last meeting are actioned",
+          "Distribute monthly finance report to management and relevant board members"
+        ],
+        "items": [
+          "Pending",
+          "Pending",
+          "Pending",
+          "Pending"
+        ]
+      },
+      {
+        "name": "HR & Operations",
+        "subCategories": [
+          "Review vendor contracts expiring in the next 60 days"
+        ],
+        "items": [
+          "Pending"
+        ]
+      },
+      {
+        "name": "Archival & filing",
+        "subCategories": [
+          "Confirm if you have you uploaded the signed PVs alongside invoices to the files",
+          "Confirm if you have you uploaded the signed Bank recs alongside invoices to the files"
+        ],
+        "items": [
+          "Pending",
+          "Pending"
+        ]
+      }
     ]
   },
   {
-    id: "tpl-engineering",
-    name: "Engineering / Consulting Monthly Checklist",
-    clientTypes: ["Briq Consultancy","Multiplier","Ultimate","ADH"],
-    sections: [
-      { name: "Revenue & Billing", subCategories: ["Invoicing","Invoicing","Invoicing","Revenue recognition","Revenue recognition","Revenue recognition","Revenue recognition","Revenue recognition","WIP","WIP","WIP"], items: ["Raise invoices for all billable milestones achieved this month","Confirm all invoices are approved by the project manager before dispatch","Issue invoices to clients and update the billing register","Post all invoice revenue to the correct project and cost centre","Reconcile revenue recognised to progress billings and project completion %","Accrue unbilled revenue for work substantially complete but not yet invoiced","Confirm deferred revenue adjustments are correctly posted","Review revenue recognition policies for long-term contracts","Update WIP schedule for all active projects","Reconcile WIP movements to project cost reports","Confirm WIP write-offs are authorised by the MD"] },
-      { name: "Project Accounting & WIP", subCategories: ["Cost capture","Cost capture","Cost capture","Cost capture","Cost allocation","Cost allocation","Cost allocation","Cost allocation","Project review","Project review","Project review"], items: ["Post all direct project costs (labour, materials, subcontractors) to the correct project code","Confirm timesheet sign-off for all billable hours for the month","Reconcile labour costs to payroll and confirm allocation to projects","Ensure all purchase orders are matched to delivery notes and invoices","Allocate indirect project overheads using the approved allocation basis","Confirm all subcontractor invoices are supported by work completion certificates","Review project cost budgets vs actuals and flag overspend to PM","Post any project variations approved this month","Review all active projects with the PM — confirm progress %","Flag projects at risk of overrun or delay to management","Confirm project close-out documentation is completed for completed projects"] },
-      { name: "Expenditure & Cost Control", subCategories: ["Payables","Payables","Payables","Cost review","Cost review","Cost review","Cost review","Cost review","Cost review","Cost review"], items: ["Review all supplier invoices and post to the accounts payable ledger","Confirm all invoices are authorised for payment","Prepare payment run and obtain approval before processing","Review overhead costs against budget — flag variances above 10%","Confirm all staff expense claims are supported and authorised","Post staff expense claims to the correct cost centre","Review subscriptions, licenses, and equipment leases for the month","Reconcile utilities and facility costs to contracts","Identify any capital expenditure vs revenue expenditure items","Ensure all purchase orders are raised before commitment of spend"] },
-      { name: "Advances", subCategories: ["Staff advances","Staff advances","Staff advances","Float","Float","Float","Float","Float"], items: ["Review all outstanding staff advances and confirm repayment status","Ensure all advances have supporting documentation and authorisation","Reconcile advances ledger to the general ledger","Review site/project float balances and reconcile to the sub-ledger","Ensure all petty expenses paid from float are properly receipted","Reconcile float replenishment requests to supporting documents","Confirm no float balance exceeds authorised limits","Post all float transactions to the accounting system"] },
-      { name: "Receivables", subCategories: ["Debtors","Debtors","Debtors","Debtors","Collections","Collections","Collections","Collections"], items: ["Prepare debtors aging report for the month","Review all balances outstanding over 60 days and escalate","Issue statements to all clients with outstanding balances","Reconcile debtors ledger to the general ledger control account","Follow up on all debtors outstanding over 30 days","Record all collections received and post to the correct project","Confirm all post-dated cheques have been banked on the due date","Update the collections tracker and report to management"] },
-      { name: "Payables", subCategories: ["Creditors","Creditors","Creditors","Creditors","Payments","Payments","Payments","Payments"], items: ["Prepare creditors aging report for the month","Confirm all supplier statements have been received and reconciled","Ensure delivery notes are matched to invoices before payment","Review all payables for disputed items and resolve","Process approved payment run via bank","Ensure all EFT payments are supported by authorised payment schedules","Confirm all cheque payments are dual-authorised","Reconcile creditors ledger to the general ledger"] },
-      { name: "Payroll & Staff Costs", subCategories: ["Payroll","Payroll","Payroll","PAYE & deductions","PAYE & deductions","PAYE & deductions","PAYE & deductions","PAYE & deductions","Site costs"], items: ["Confirm headcount for the month with HR","Process payroll for all permanent and contract staff","Obtain payroll approval from the MD","Calculate and confirm PAYE deductions per employee","Prepare PAYE returns and file on iTax by the 9th","Remit NSSF contributions by the 9th","Remit NHIF contributions by the 9th","Reconcile payroll ledger to payroll register and bank payments","Post site allowances and per diems to the correct project code"] },
-      { name: "Cash & Bank", subCategories: ["Bank reconciliation","Bank reconciliation","Bank reconciliation","Bank reconciliation","Cash management","Cash management","Cash management","Cash management","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash","Petty cash"], items: ["Prepare and sign off bank reconciliation for all accounts","Review and clear all outstanding reconciling items older than 30 days","Confirm all bank charges and interest are posted","Ensure all inter-bank transfers are reconciled and authorised","Prepare weekly cash flow forecast for the upcoming month","Review bank balances and flag any shortfalls to management","Confirm all direct debits and standing orders are accounted for","Ensure all site bank accounts are reconciled","Count site/office petty cash and prepare reconciliation","Ensure all petty cash vouchers are signed and filed","Replenish petty cash and record the journal","Confirm petty cash float does not exceed approved limit","Post petty cash expenditure by category","Review petty cash for unusual or unapproved items","Ensure petty cash custodian has signed the reconciliation","File petty cash reconciliation with supporting receipts","Reconcile mobile money (M-Pesa) transactions to the cashbook","Confirm all M-Pesa payments are posted to the correct project","Post any cash sales or collections directly to the cashbook"] },
-      { name: "Balance Sheet Integrity", subCategories: ["Fixed assets","Fixed assets","Working capital","Working capital","Working capital","Working capital","General ledger"], items: ["Confirm fixed asset additions and disposals are posted and authorised","Reconcile fixed asset register to the general ledger","Confirm all prepayments and accruals for the month are posted","Review all balance sheet accounts and confirm no long-outstanding items","Reconcile intercompany accounts (if applicable)","Confirm all loans and borrowings are reconciled to statements","Complete full balance sheet reconciliation and sign off"] },
-      { name: "Tax & Regulatory Compliance", subCategories: ["VAT","VAT","PAYE","Withholding tax","Withholding tax","Corporate tax","Other"], items: ["Prepare VAT workings from the ledger — input vs output tax","File VAT return on iTax and remit by the 20th","Confirm PAYE has been filed and paid","Prepare withholding tax certificates for suppliers subject to WHT","File and remit withholding tax by the 20th","Calculate and post corporate tax instalment if applicable this quarter","Confirm any other statutory returns due for the month are filed"] },
-      { name: "Budget & Forecasting", subCategories: ["Reporting","Reporting","Reporting","Forecasting"], items: ["Prepare month-end management accounts (P&L, Balance Sheet, Cash Flow)","Compare actuals vs budget — prepare variance commentary","Circulate management pack to MD by the 5th of the following month","Update rolling cash flow forecast and project profitability reports"] },
-      { name: "Management Reporting & Governance", subCategories: ["Reporting","Reporting","Compliance","Compliance","Compliance","Filing","Filing"], items: ["Prepare project profitability reports for all active projects","Prepare monthly KPI dashboard for management review","Confirm all signed financial authorities are current and on file","Review access rights to the accounting system — flag any changes","Ensure all project contracts and variations are filed and current","File all bank correspondence and statements received this month","Archive month-end reports in the shared drive"] },
-      { name: "TZ Company", subCategories: ["TZ compliance","TZ compliance"], items: ["Reconcile TZ entity accounts and confirm inter-company eliminations","Confirm TRA filing requirements are met for the month"] },
-      { name: "Archival / Filing", subCategories: ["Physical","Physical","Digital","Digital","Digital"], items: ["Ensure all physical invoices, receipts, and vouchers are filed by date","Confirm all bank statements and correspondence are physically filed","Upload all month-end reports to the shared drive","Confirm all project files are backed up on the server","Ensure accounting data backup has been performed and verified"] }
+    "id": "tpl-amm",
+    "name": "AMM Law Monthly Checklist",
+    "clientTypes": [
+      "AMM Law",
+      "AMM"
+    ],
+    "sections": [
+      {
+        "name": "Billing & Revenue",
+        "subCategories": [
+          "Time recording",
+          "Time recording",
+          "Time recording",
+          "Time recording",
+          "Disbursements",
+          "Disbursements",
+          "Disbursements",
+          "Invoice generation",
+          "Invoice generation",
+          "Invoice generation",
+          "Invoice generation",
+          "Revenue recognition",
+          "Revenue recognition",
+          "Revenue recognition"
+        ],
+        "items": [
+          "Confirm all fee earners have submitted time records for the month",
+          "Review and approve unbilled time entries; chase outstanding timesheets from fee earners",
+          "Identify and write off time entries that will not be recoverable; obtain partner approval",
+          "Reconcile total hours recorded to expected billing capacity by fee earner",
+          "Confirm all client disbursements (court fees, counsel fees, searches, stamps) are captured",
+          "Ensure disbursements are correctly coded to client/matter and supported by receipts",
+          "Reconcile disbursements ledger to supporting invoices and receipts",
+          "Raise all invoices for time and disbursements billed this month",
+          "Confirm invoices are approved by the responsible partner before dispatch",
+          "Confirm invoice terms, client reference, and VAT treatment are correct on each invoice",
+          "Issue invoices to clients and record in the billing register against each matter",
+          "Post revenue for invoices raised in the billing ledger",
+          "Accrue unbilled time for matters where work is substantially complete but not yet invoiced",
+          "Reconcile total fees billed vs fees collected vs WIP movement for the month"
+        ]
+      },
+      {
+        "name": "Client Trust / Ledger Accounts",
+        "subCategories": [
+          "Trust reconciliation",
+          "Trust reconciliation",
+          "Trust reconciliation",
+          "Trust compliance",
+          "Trust compliance",
+          "Trust compliance",
+          "Trust compliance",
+          "Trust compliance",
+          "Matter closure",
+          "Matter closure",
+          "Matter closure"
+        ],
+        "items": [
+          "Reconcile each client trust/ledger account balance to the trust bank statement",
+          "Confirm aggregate of all individual client ledger balances equals the trust bank balance",
+          "Investigate and resolve any differences in client ledger reconciliations immediately",
+          "Confirm no client trust funds have been used for office/firm purposes",
+          "Confirm all client funds received are deposited into the trust account on the same day",
+          "Review all disbursements from trust; confirm each has client authority and matter reference",
+          "Confirm trust account does not have a debit balance on any individual client ledger",
+          "Ensure any interest earned on trust accounts is allocated per policy and regulatory rules",
+          "Identify matters closed this month; confirm all trust funds are returned or applied",
+          "Confirm final bills are raised and any residual trust balances cleared before matter closure",
+          "Archive closed matter financial records per the firm's document retention policy"
+        ]
+      },
+      {
+        "name": "Cash & Bank",
+        "subCategories": [
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Petty cash",
+          "Petty cash",
+          "Petty cash",
+          "Cash management",
+          "Cash management",
+          "Cash management",
+          "Cash forecasting",
+          "Cash forecasting",
+          "Cash forecasting"
+        ],
+        "items": [
+          "Obtain month-end bank statements for all office/firm bank accounts",
+          "Reconcile each office bank account closing balance to the general ledger cash book",
+          "List all outstanding deposits in transit at month-end; confirm expected clearance dates",
+          "List all outstanding cheques and unpresented payments; investigate items over 30 days",
+          "Confirm all bank charges, interest, and fees are posted in the cash book",
+          "Review bank statement for any unusual or unauthorised transactions; escalate immediately",
+          "Confirm no stale cheques (older than 6 months) remain uncleared",
+          "Perform physical petty cash count; confirm balance agrees to cashbook",
+          "Reconcile petty cash to the petty cash ledger; confirm all vouchers are approved and filed",
+          "Replenish petty cash to the approved float level and post replenishment journal",
+          "Confirm all inter-account transfers are posted in both accounts and reconciled",
+          "Confirm trust and office bank accounts are clearly segregated in the ledger at all times",
+          "Prepare month-end actual cash flow statement (office account receipts and payments)",
+          "Update rolling 3-month cash flow forecast with latest billing and cost data",
+          "Identify any projected cash shortfalls; flag to management with proposed mitigations",
+          "Confirm adequate cash is available for next payroll and major payment obligations"
+        ]
+      },
+      {
+        "name": "Expenditure & Cost Control",
+        "subCategories": [
+          "Invoice processing",
+          "Invoice processing",
+          "Accruals & prepayments",
+          "Accruals & prepayments",
+          "Accruals & prepayments",
+          "Cost control",
+          "Cost control",
+          "Cost control",
+          "Cost control"
+        ],
+        "items": [
+          "Confirm all supplier invoices are coded, approved, and posted to the correct cost centre",
+          "Confirm counsel and expert witness fees are approved and posted against the correct matter",
+          "Post accruals for costs incurred but not yet invoiced (counsel, searches, utilities)",
+          "Release prepayments proportionately; confirm remaining balances are valid",
+          "Accrue office costs — rent, insurance, software licences, library subscriptions",
+          "Compare actual costs to budget by department and practice group; flag variances above 10%",
+          "Review professional indemnity insurance and other firm insurance costs are correctly posted",
+          "Confirm depreciation on office equipment, IT, and leasehold improvements is posted",
+          "Review and approve any unbudgeted expenditure above the delegated authority threshold"
+        ]
+      },
+      {
+        "name": "Advances & Disbursement Float",
+        "subCategories": [
+          "Staff advances",
+          "Staff advances",
+          "Staff advances",
+          "Staff advances",
+          "Disbursement float",
+          "Disbursement float",
+          "Disbursement float",
+          "Reconciliation"
+        ],
+        "items": [
+          "Review advances register; confirm all open balances per fee earner and support staff",
+          "Follow up on all advances outstanding beyond the approved clearance period (30 days)",
+          "Post retirement documents for advances liquidated this month",
+          "Confirm no new advance is issued to staff with an unretired prior advance",
+          "Reconcile disbursement float advances to actual disbursements incurred per matter",
+          "Confirm client disbursement floats are correctly recorded as client liabilities",
+          "Follow up on disbursement floats where matters are substantially complete",
+          "Confirm advances ledger balance agrees to balance sheet advances line"
+        ]
+      },
+      {
+        "name": "Receivables",
+        "subCategories": [
+          "Aged analysis",
+          "Aged analysis",
+          "Collections",
+          "Collections",
+          "Collections",
+          "Credit risk",
+          "Credit risk",
+          "Reconciliation"
+        ],
+        "items": [
+          "Generate aged receivables report; review all balances by client and matter",
+          "Identify invoices overdue by 30, 60, and 90+ days; escalate 90+ day items to partners",
+          "Issue payment reminders to clients with overdue invoices",
+          "Post all cash receipts; confirm correct allocation to client invoices and matters",
+          "Follow up on disputed fee notes with the responsible partner; document resolution plan",
+          "Assess recoverability of aged balances; raise bad debt provision where required",
+          "Review credit terms for clients with persistently late payment patterns",
+          "Reconcile receivables ledger total to balance sheet receivables line"
+        ]
+      },
+      {
+        "name": "Payables",
+        "subCategories": [
+          "Aged analysis",
+          "Aged analysis",
+          "Payments",
+          "Payments",
+          "Payments",
+          "Statutory payables",
+          "Statutory payables",
+          "Reconciliation",
+          "Reconciliation"
+        ],
+        "items": [
+          "Generate aged payables report; review all balances by supplier",
+          "Identify invoices due for payment this month; prepare payment run schedule",
+          "Process approved payment run; confirm bank transfers are authorised per policy",
+          "Confirm counsel, expert witness, and agent fee payments are made per agreed terms",
+          "Reconcile supplier statements to the payables ledger for key vendors",
+          "Confirm PAYE, NSSF, NHIF remittances are processed and receipts filed",
+          "Confirm VAT payable is correctly calculated on firm fee income",
+          "Reconcile payables ledger total to balance sheet payables line",
+          "Review long-outstanding creditor balances for continued validity"
+        ]
+      },
+      {
+        "name": "Payroll & HR Costs",
+        "subCategories": [
+          "Payroll processing",
+          "Payroll processing",
+          "Payroll processing",
+          "Payroll processing",
+          "Statutory deductions",
+          "Statutory deductions",
+          "Cost allocation",
+          "Cost allocation",
+          "Cost allocation"
+        ],
+        "items": [
+          "Confirm approved headcount, new starters, leavers, and salary changes for the month",
+          "Process monthly payroll for partners/directors, fee earners, and support staff",
+          "Reconcile gross pay to approved salary and drawings schedule",
+          "Issue payslips to all staff; confirm net pay agrees to bank transfer total",
+          "Confirm PAYE, NSSF, NHIF deductions are correctly computed and remitted",
+          "File statutory remittance returns by due dates and retain receipts",
+          "Allocate payroll costs to practice groups and cost centres",
+          "Post partner drawings and profit distributions per the partnership/shareholder agreement",
+          "Reconcile total payroll cost to the general ledger posting"
+        ]
+      },
+      {
+        "name": "Tax & Regulatory Compliance",
+        "subCategories": [
+          "VAT",
+          "VAT",
+          "VAT",
+          "Withholding tax",
+          "Withholding tax",
+          "Regulatory",
+          "Regulatory"
+        ],
+        "items": [
+          "Reconcile output VAT on fee notes and input VAT on approved supplier invoices",
+          "Prepare and file monthly VAT return by statutory deadline",
+          "Confirm VAT treatment on disbursements — distinguish principal vs agent disbursements",
+          "Confirm withholding tax deducted on advocate/counsel fees and professional payments",
+          "File withholding tax return and remit deducted amounts by due date",
+          "Confirm practising certificates and Law Society membership fees are current for all advocates",
+          "Review any upcoming LSK, regulatory, or court compliance deadlines"
+        ]
+      },
+      {
+        "name": "Budget & Management Reporting",
+        "subCategories": [
+          "Budget vs actuals",
+          "Budget vs actuals",
+          "KPIs",
+          "KPIs",
+          "KPIs"
+        ],
+        "items": [
+          "Prepare monthly budget vs actuals report by practice group and firm-wide",
+          "Document and present all material fee and cost variances to partners",
+          "Prepare monthly fee earner KPI report — fees billed, fees collected, utilisation, realisations",
+          "Review lock-up days (WIP days + debtor days) by practice group and fee earner",
+          "Update full-year revenue forecast based on current pipeline and billing run-rate"
+        ]
+      },
+      {
+        "name": "Governance & Operations",
+        "subCategories": [
+          "Governance",
+          "Governance",
+          "Governance",
+          "Governance",
+          "Operations",
+          "Operations"
+        ],
+        "items": [
+          "Review and action any outstanding internal control or compliance findings",
+          "Confirm all financial authorisations and delegated authority limits are being observed",
+          "Update the financial risk register with any new risks identified this month",
+          "Circulate monthly management accounts to partners within agreed reporting deadline",
+          "Review vendor contracts expiring in the next 60 days; flag for renewal or renegotiation",
+          "File all month-end working papers and supporting documents per retention policy"
+        ]
+      }
     ]
   },
   {
-    id: "tpl-general",
-    name: "General Monthly Checklist",
-    clientTypes: ["BRC Consultancy"],
-    sections: [
-      { name: "Billing & Revenue", subCategories: ["Invoicing","Revenue recognition","Revenue recognition"], items: ["Raise and dispatch all invoices for the month","Post all revenue to the correct ledger accounts","Reconcile revenue to collections and bank"] },
-      { name: "Cash & Bank", subCategories: ["Bank reconciliation","Petty cash"], items: ["Prepare and sign off monthly bank reconciliation","Reconcile petty cash and replenish float"] },
-      { name: "Payables & Receivables", subCategories: ["Creditors","Debtors"], items: ["Prepare creditors aging and process approved payment run","Prepare debtors aging and follow up on overdue accounts"] },
-      { name: "Payroll & Tax", subCategories: ["Payroll","PAYE","VAT"], items: ["Process and approve payroll","File PAYE returns by the 9th","File VAT return by the 20th"] },
-      { name: "Reporting", subCategories: ["Management accounts"], items: ["Prepare month-end management accounts and circulate to management"] }
+    "id": "tpl-brc",
+    "name": "BRC Consultancy Monthly Checklist",
+    "clientTypes": [
+      "BRC Consultancy",
+      "Black Rose Communications"
+    ],
+    "sections": [
+      {
+        "name": "Billing, Revenue & WIP",
+        "subCategories": [
+          "Timesheet review",
+          "Timesheet review",
+          "Timesheet review",
+          "Timesheet review",
+          "WIP management",
+          "WIP management",
+          "Invoice generation",
+          "Invoice generation",
+          "Invoice generation",
+          "Invoice generation",
+          "Revenue recognition",
+          "Revenue recognition",
+          "Revenue recognition",
+          "Revenue recognition"
+        ],
+        "items": [
+          "Confirm all professional staff have submitted timesheets for every working day of the month",
+          "Review and approve timesheets; confirm hours are coded to the correct client/engagement",
+          "Identify non-chargeable time (training, admin, BD, leave) and post to correct internal codes",
+          "Reconcile total hours recorded to expected capacity by service line (audit, accounting, tax)",
+          "Update WIP register for all active audit, accounting, and tax compliance engagements",
+          "Write down WIP for any engagement where recovery is doubtful; obtain partner approval",
+          "Raise invoices for all completed milestones, monthly retainer fees, and ad hoc work billed this month",
+          "Confirm all invoices are approved by the responsible partner before dispatch to clients",
+          "Confirm invoice amounts, VAT treatment, and client reference agree to the engagement letter",
+          "Issue invoices and record in the billing register against each client and engagement",
+          "Recognise revenue for work done this month per engagement (% completion or milestone basis)",
+          "Post deferred income for fees received in advance of work being performed",
+          "Reconcile recognised revenue to invoices raised and WIP movements for the month",
+          "Prepare monthly fee income report by service line (audit, accounting, tax compliance)"
+        ]
+      },
+      {
+        "name": "Audit Engagements — Monthly Progress",
+        "subCategories": [
+          "Engagement management",
+          "Engagement management",
+          "Engagement management",
+          "Engagement management",
+          "Audit file management",
+          "Audit file management",
+          "Audit file management",
+          "Audit file management",
+          "Reporting",
+          "Reporting",
+          "Reporting",
+          "Billing"
+        ],
+        "items": [
+          "Update audit engagement tracker with current status of all active audit assignments",
+          "Confirm all audit fieldwork scheduled for the month is completed or rescheduled with client agreement",
+          "Confirm engagement letters are in place for all audits starting this month",
+          "Confirm audit planning materiality and risk assessments are up to date on active engagements",
+          "Confirm audit working paper files for all active engagements are being updated and reviewed",
+          "Confirm all significant audit findings and issues are documented and escalated to partners",
+          "Confirm outstanding client information requests (PBC lists) are followed up and tracked",
+          "Confirm all review notes are cleared or carried forward with documented responses",
+          "Confirm all audit reports due for issue this month are completed and issued on time",
+          "Confirm management letters for completed audits are prepared and issued to clients",
+          "Confirm all regulatory submission deadlines (e.g. filing with registrar) for audit clients are met",
+          "Confirm audit fee invoices raised match the engagement letter fee schedule or agreed variations"
+        ]
+      },
+      {
+        "name": "Accounting & Bookkeeping Engagements",
+        "subCategories": [
+          "Bookkeeping",
+          "Bookkeeping",
+          "Bookkeeping",
+          "Bookkeeping",
+          "Bookkeeping",
+          "Management accounts",
+          "Management accounts",
+          "Management accounts",
+          "Management accounts",
+          "Reconciliations",
+          "Reconciliations",
+          "Reconciliations",
+          "Billing"
+        ],
+        "items": [
+          "Confirm all client bookkeeping data (bank statements, invoices, receipts) is received on time",
+          "Post all client transactions — sales, purchases, payroll, bank — for the month",
+          "Reconcile client bank accounts to the cash book for the month",
+          "Process client payroll and confirm payroll journals are posted for the month",
+          "Confirm all client accounts payable and receivable ledgers are updated and reconciled",
+          "Prepare monthly management accounts for all accounting clients due this month",
+          "Confirm management accounts are reviewed by the responsible manager before client delivery",
+          "Deliver management accounts to clients within agreed turnaround times",
+          "Follow up with clients on any queries arising from management accounts delivered",
+          "Perform month-end reconciliations for all client accounts — bank, debtors, creditors, payroll",
+          "Confirm all client trial balances are in balance and free from unexplained items",
+          "Post month-end journals — accruals, prepayments, depreciation — for all accounting clients",
+          "Confirm accounting/bookkeeping fee invoices raised agree to engagement letter fee schedules"
+        ]
+      },
+      {
+        "name": "Tax Compliance Engagements",
+        "subCategories": [
+          "VAT",
+          "VAT",
+          "VAT",
+          "VAT",
+          "Withholding Tax",
+          "Withholding Tax",
+          "Withholding Tax",
+          "Compliance tracker",
+          "Compliance tracker",
+          "Billing"
+        ],
+        "items": [
+          "Confirm client sales and purchase data is received for VAT computation",
+          "Confirm VAT computations are prepared, reviewed, and approved before filing",
+          "Confirm VAT 3 returns are filed on iTax by the 20th for all VAT clients",
+          "Confirm VAT payment E-slips are generated and shared with clients for payment",
+          "Confirm WHT schedules are prepared for all applicable client payments this month",
+          "Confirm WHT returns are filed on iTax by the 20th for all WHT clients",
+          "Confirm WHT certificates are generated and distributed to suppliers on behalf of clients",
+          "Update tax compliance tracker with filing status for each client and obligation",
+          "Flag any overdue filings or pending payments; escalate to engagement manager",
+          "Confirm tax compliance fee invoices raised agree to engagement letter fee schedules"
+        ]
+      },
+      {
+        "name": "Cash & Bank",
+        "subCategories": [
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Petty cash",
+          "Petty cash",
+          "Petty cash",
+          "Cash management",
+          "Cash management",
+          "Cash management",
+          "Cash forecasting",
+          "Cash forecasting",
+          "Cash forecasting"
+        ],
+        "items": [
+          "Obtain month-end bank statements for all firm bank accounts",
+          "Reconcile each firm bank account closing balance to the general ledger cash book",
+          "List all outstanding deposits in transit at month-end; confirm expected clearance dates",
+          "List all outstanding cheques and unpresented payments; investigate items over 30 days",
+          "Confirm all bank charges, interest, and fees are posted in the firm cash book",
+          "Review bank statement for unusual or unauthorised transactions; escalate immediately",
+          "Confirm no stale cheques (older than 6 months) remain uncleared on the reconciliation",
+          "Perform physical petty cash count; confirm balance agrees to the cashbook",
+          "Reconcile petty cash to the petty cash ledger; confirm all vouchers are approved and filed",
+          "Replenish petty cash to the approved float level and post replenishment journal",
+          "Confirm all inter-bank transfers are posted in both accounts and reconciled",
+          "Review month-end cash position against minimum operating balance requirements",
+          "Prepare month-end actual cash flow statement (firm receipts and payments)",
+          "Update rolling 3-month cash flow forecast with latest billing and cost data",
+          "Identify projected cash shortfalls; flag to managing partner with proposed mitigations",
+          "Confirm adequate cash is available for next payroll run and major payment obligations"
+        ]
+      },
+      {
+        "name": "Advances",
+        "subCategories": [
+          "Staff advances",
+          "Staff advances",
+          "Staff advances",
+          "Staff advances",
+          "Client disbursements",
+          "Client disbursements",
+          "Client disbursements",
+          "Reconciliation"
+        ],
+        "items": [
+          "Review advances register; confirm all open balances per staff member",
+          "Follow up on all advances outstanding beyond the approved clearance period (30 days)",
+          "Post retirement documents for advances liquidated this month",
+          "Confirm no new advance is issued to staff with an unretired prior advance",
+          "Reconcile any out-of-pocket client disbursements to approved engagement budgets",
+          "Confirm all client disbursements are invoiced and recoverable per engagement letter",
+          "Confirm firm funds advanced for client disbursements are correctly recorded as receivables",
+          "Confirm advances ledger balance agrees to balance sheet advances line"
+        ]
+      },
+      {
+        "name": "Receivables",
+        "subCategories": [
+          "Aged analysis",
+          "Aged analysis",
+          "Collections",
+          "Collections",
+          "Collections",
+          "Credit risk",
+          "Credit risk",
+          "Reconciliation"
+        ],
+        "items": [
+          "Generate aged receivables report; review all balances by client and engagement",
+          "Identify invoices overdue by 30, 60, and 90+ days; escalate 90+ day items to partners",
+          "Issue payment reminders to clients with overdue invoices",
+          "Post all cash receipts; confirm correct allocation to client invoices and engagements",
+          "Follow up on disputed fee notes with the responsible partner; document resolution plan",
+          "Assess recoverability of aged balances; raise bad debt provision where required",
+          "Review credit terms for clients with persistently late payment patterns",
+          "Reconcile receivables ledger total to balance sheet receivables line"
+        ]
+      },
+      {
+        "name": "Payables",
+        "subCategories": [
+          "Aged analysis",
+          "Aged analysis",
+          "Payments",
+          "Payments",
+          "Payments",
+          "Statutory payables",
+          "Statutory payables",
+          "Reconciliation",
+          "Reconciliation"
+        ],
+        "items": [
+          "Generate aged payables report; review all balances by supplier",
+          "Identify invoices due for payment this month; prepare payment run schedule",
+          "Process approved payment run; confirm bank transfers are authorised per policy",
+          "Confirm specialist sub-contractor and expert fee payments are made per agreed terms",
+          "Reconcile supplier statements to the payables ledger for key vendors",
+          "Confirm firm PAYE, NSSF, NHIF remittances are processed and receipts are filed",
+          "Confirm firm VAT and WHT obligations are met and receipts are retained",
+          "Reconcile payables ledger total to balance sheet payables line",
+          "Review long-outstanding creditor balances for continued validity"
+        ]
+      },
+      {
+        "name": "Payroll & Staff Costs",
+        "subCategories": [
+          "Payroll processing",
+          "Payroll processing",
+          "Payroll processing",
+          "Payroll processing",
+          "Statutory deductions",
+          "Statutory deductions",
+          "Cost allocation",
+          "Cost allocation",
+          "Cost allocation"
+        ],
+        "items": [
+          "Confirm approved headcount, new starters, leavers, and salary changes for the month",
+          "Process monthly payroll for partners, managers, seniors, and support staff",
+          "Reconcile gross pay to approved salary schedule",
+          "Issue payslips; confirm net pay agrees to bank transfer total before release",
+          "Confirm firm PAYE, NSSF, NHIF deductions are correctly computed and remitted",
+          "File firm statutory remittance returns by due dates; retain receipts",
+          "Allocate payroll costs to service lines (audit, accounting, tax) per timesheet data",
+          "Post partner drawings and profit distributions per the partnership/shareholder agreement",
+          "Reconcile total payroll cost to the general ledger posting"
+        ]
+      },
+      {
+        "name": "Lock-up, Utilisation & Engagement Profitability",
+        "subCategories": [
+          "Lock-up",
+          "Lock-up",
+          "Lock-up",
+          "Utilisation",
+          "Utilisation",
+          "Engagement profitability",
+          "Engagement profitability",
+          "Engagement profitability"
+        ],
+        "items": [
+          "Calculate month-end WIP days by engagement and service line",
+          "Calculate month-end debtor days by client and service line",
+          "Calculate total lock-up days (WIP days + debtor days) for the firm",
+          "Calculate chargeable utilisation rates per staff member (chargeable hours / available hours)",
+          "Flag fee earners with utilisation below target to the relevant manager/partner",
+          "Prepare month-end engagement profitability report — fees vs cost per engagement",
+          "Identify engagements with negative margins or cost overruns; report to partners",
+          "Calculate realisation rates (fees billed / WIP generated) by service line and partner"
+        ]
+      },
+      {
+        "name": "Quality Control & Professional Compliance",
+        "subCategories": [
+          "QC review",
+          "QC review",
+          "QC review",
+          "Independence",
+          "Independence",
+          "CPD & licensing",
+          "CPD & licensing",
+          "Risk",
+          "Risk"
+        ],
+        "items": [
+          "Confirm all audit, accounting, and tax deliverables issued this month have been reviewed at the correct level (manager/partner)",
+          "Confirm second partner review (cold review) has been completed where required by firm policy",
+          "Confirm engagement quality control reviews (EQCR) are in progress for applicable audits",
+          "Confirm no new independence threats or conflicts of interest have arisen for any active engagement",
+          "Confirm all new client acceptance and conflict checks are completed and documented this month",
+          "Confirm all professional staff CPD hours are being recorded and are on track for the year",
+          "Confirm all practising certificates and professional memberships (ICPAK, ICPAS, etc.) are current",
+          "Review the firm risk register; flag any new risks arising from active client engagements",
+          "Confirm professional indemnity insurance is current and adequate for the firm's engagements"
+        ]
+      },
+      {
+        "name": "Management Reporting & Governance",
+        "subCategories": [
+          "Reports",
+          "Reports",
+          "Reports",
+          "Reports",
+          "Governance",
+          "Governance",
+          "Governance",
+          "Governance"
+        ],
+        "items": [
+          "Prepare monthly management accounts — P&L by service line, balance sheet, cash flow",
+          "Prepare monthly engagement dashboard — WIP, billings, lock-up, utilisation, realisations",
+          "Prepare tax compliance dashboard — filing status per client and obligation for the month",
+          "Circulate management pack to partners within the agreed reporting deadline",
+          "Review and action any outstanding regulatory, ICPAK, or internal quality findings",
+          "Confirm all financial authorisations and delegated authority limits are being observed",
+          "Update the firm risk register with any new risks identified this month",
+          "File all month-end working papers and supporting documents per retention policy"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tpl-briq",
+    "name": "Briq Consultancy Monthly Checklist",
+    "clientTypes": [
+      "Briq Consultancy",
+      "BRIQ"
+    ],
+    "sections": [
+      {
+        "name": "Revenue & Billing",
+        "subCategories": [
+          "Timesheet review",
+          "Timesheet review",
+          "Timesheet review",
+          "Invoice generation",
+          "Invoice generation",
+          "Invoice generation",
+          "Invoice generation",
+          "Revenue recognition",
+          "Revenue recognition",
+          "Revenue recognition",
+          "Revenue recognition"
+        ],
+        "items": [
+          "Collect and approve all staff timesheets; confirm hours allocated to correct project codes",
+          "Reconcile billable hours logged against project plans and engagement letters",
+          "Identify and document non-billable hours by category (admin, training, BD)",
+          "Raise invoices for all billable milestones, time-and-materials, and retainer fees due this month",
+          "Confirm invoice amounts, payment terms, and client PO references before issuing",
+          "Issue invoices to clients and log dispatch date in the billing register",
+          "Record all invoices raised in the accounts receivable ledger against the correct project",
+          "Determine revenue to be recognised this month per project (% completion or milestone basis)",
+          "Post revenue recognition journals; defer income for work not yet earned",
+          "Reconcile recognised revenue to invoices raised and WIP movements",
+          "Confirm contract modifications or scope changes are reflected in revenue schedules"
+        ]
+      },
+      {
+        "name": "Project Accounting & WIP",
+        "subCategories": [
+          "WIP review",
+          "WIP review",
+          "WIP review",
+          "WIP review",
+          "Cost allocation",
+          "Cost allocation",
+          "Cost allocation",
+          "Project profitability",
+          "Project profitability",
+          "Project profitability",
+          "Project profitability",
+          "Contract registry"
+        ],
+        "items": [
+          "Update work-in-progress (WIP) register for all active projects",
+          "Reconcile WIP: opening balance + costs incurred − revenue recognised = closing WIP",
+          "Review WIP for projects nearing or exceeding budget; escalate to project managers",
+          "Write down WIP for any projects where recovery is doubtful; obtain management approval",
+          "Allocate direct project costs (labour, subconsultants, materials, site costs) to correct project codes",
+          "Confirm subconsultant invoices are approved and posted against the correct project",
+          "Allocate indirect overhead costs to projects per the agreed apportionment methodology",
+          "Prepare month-end project profitability report (revenue vs cost per project)",
+          "Identify projects with negative margins or cost overruns; report to management",
+          "Update project completion estimates and revised budget-at-completion (BAC) where needed",
+          "Confirm all project opening and closing phases are correctly reflected in the system",
+          "Confirm if all contracts have been updated here"
+        ]
+      },
+      {
+        "name": "Expenditure & Cost Control",
+        "subCategories": [
+          "Invoice processing",
+          "Invoice processing",
+          "Invoice processing",
+          "Invoice processing",
+          "Accruals & prepayments",
+          "Accruals & prepayments",
+          "Accruals & prepayments",
+          "Cost control",
+          "Cost control",
+          "Cost control",
+          "Cost control",
+          "Cost control"
+        ],
+        "items": [
+          "Ensure all supplier invoices received are coded, approved, and posted",
+          "Ensure a payment voucher is raised signed by initiator and approver and attached to the appropriate invoice",
+          "Confirm subconsultant and specialist contractor invoices match purchase orders or agreements",
+          "Review and post staff expense claims; confirm receipts and project codes are correct",
+          "Post accruals for costs incurred but not yet invoiced (subconsultants, site costs, utilities)",
+          "Release prepayments proportionately; confirm remaining prepayment balances are valid",
+          "Accrue monthly office costs — rent, insurance, software licences, professional subscriptions",
+          "Compare actual costs to budget by department and project; flag variances above 10%",
+          "Review travel and accommodation expenditure against policy and project budgets",
+          "Confirm depreciation on engineering equipment, vehicles, and office assets is posted",
+          "Review and approve any unbudgeted expenditure above the delegated authority threshold",
+          "Review if details in the accounting system are adequately documented (date, payee, invoice number, invoice amount, details, PV number)"
+        ]
+      },
+      {
+        "name": "Advances",
+        "subCategories": [
+          "Staff advances",
+          "Director advances",
+          "Staff advances",
+          "Director advances",
+          "Staff advances",
+          "Project advances",
+          "Project advances",
+          "Project advances",
+          "Project advances"
+        ],
+        "items": [
+          "Review advances register; confirm all open balances per staff member",
+          "Review advances register; confirm all open balances per staff member",
+          "Follow up on all staff advances outstanding beyond the approved clearance period (30 days)",
+          "Follow up on all staff advances outstanding beyond the approved clearance period (30 days)",
+          "Confirm no new advance is issued to staff with an unretired prior advance",
+          "Reconcile project mobilisation advances against costs incurred to date",
+          "Confirm client advances received are correctly recorded as deferred income / liability",
+          "Flag advances to subconsultants pending liquidation; obtain retirement documentation",
+          "Confirm advances ledger balance agrees to balance sheet advances line"
+        ]
+      },
+      {
+        "name": "Receivables",
+        "subCategories": [
+          "Aged analysis",
+          "Aged analysis",
+          "Collections",
+          "Collections",
+          "Collections",
+          "Credit risk",
+          "Credit risk",
+          "Reconciliation"
+        ],
+        "items": [
+          "Generate aged receivables report; review all balances by client and project",
+          "Identify invoices overdue by 30, 60, and 90+ days; escalate 90+ day items to management",
+          "Issue payment reminders to clients with overdue invoices",
+          "Follow up outstanding retainer and milestone payments with client contacts",
+          "Post all cash receipts against open receivable items; confirm correct allocation by project",
+          "Assess recoverability of aged receivables; raise or adjust bad debt provision where required",
+          "Confirm disputed invoice items are documented and being actively resolved",
+          "Reconcile receivables ledger total to balance sheet receivables line"
+        ]
+      },
+      {
+        "name": "Payables",
+        "subCategories": [
+          "Aged analysis",
+          "Aged analysis",
+          "Payments",
+          "Payments",
+          "Payments",
+          "Statutory payables",
+          "Statutory payables",
+          "Reconciliation",
+          "Reconciliation"
+        ],
+        "items": [
+          "Generate aged payables report; review all balances by vendor",
+          "Identify invoices due for payment this month; prepare payment run schedule",
+          "Process approved payment run; confirm bank transfers are authorised per policy",
+          "Confirm subconsultant payments are made per agreed milestones or payment schedules",
+          "Reconcile supplier statements to the payables ledger for key vendors",
+          "Confirm PAYE, NSSF, NHIF remittances are processed and receipts filed",
+          "Confirm VAT and withholding tax on subconsultant/professional fees is correctly handled",
+          "Reconcile payables ledger total to balance sheet payables line",
+          "Review long-outstanding creditor balances for continued validity"
+        ]
+      },
+      {
+        "name": "Payroll & Staff Costs",
+        "subCategories": [
+          "Payroll processing",
+          "Payroll processing",
+          "Payroll processing",
+          "Payroll processing",
+          "Statutory deductions",
+          "Statutory deductions",
+          "Staff costs allocation",
+          "Staff costs allocation",
+          "Staff costs allocation"
+        ],
+        "items": [
+          "Confirm approved headcount and any new starters, leavers, or salary changes for the month",
+          "Process monthly payroll; cross-check gross pay to approved salary schedule",
+          "Issue payslips to all staff",
+          "Reconcile net pay to bank transfer total before release",
+          "Confirm PAYE, NSSF, NHIF deductions are correctly computed and remitted",
+          "File statutory remittance returns by due dates and retain payment receipts",
+          "Allocate payroll costs to projects and cost centres per approved timesheet data",
+          "Post employer pension and benefit contributions to the correct expense lines",
+          "Reconcile total payroll cost per payroll report to the general ledger posting"
+        ]
+      },
+      {
+        "name": "Cash & Bank",
+        "subCategories": [
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Petty cash",
+          "Petty cash",
+          "Petty cash",
+          "Petty cash",
+          "Cash management",
+          "Cash management",
+          "Cash management",
+          "Cash management",
+          "Cash forecasting",
+          "Cash forecasting",
+          "Cash forecasting"
+        ],
+        "items": [
+          "Obtain month-end bank statements for all bank accounts",
+          "Reconcile each bank account closing balance to the general ledger cash book balance",
+          "List all outstanding deposits in transit at month-end; confirm expected clearance dates",
+          "List all outstanding cheques and unpresented payments at month-end",
+          "Investigate and resolve all reconciling items older than 30 days",
+          "Confirm all bank charges, interest, and fees are posted in the cash book",
+          "Review bank statement for any unusual or unauthorised transactions; escalate immediately",
+          "Confirm no stale cheques (older than 6 months) remain uncleared on the reconciliation",
+          "Perform physical petty cash count; confirm notes and coins tally with the cashbook",
+          "Reconcile petty cash physical balance to the petty cash ledger",
+          "Confirm all petty cash vouchers are approved, complete, and filed with supporting receipts",
+          "Replenish petty cash to the approved float level; post replenishment journal",
+          "Confirm all inter-bank transfers for the month are posted in both accounts and reconciled",
+          "Review month-end cash position against minimum operating balance requirements",
+          "Confirm client retainer receipts and milestone payments are posted to correct project accounts",
+          "Prepare month-end actual cash flow statement (receipts and payments)",
+          "Update rolling 3-month cash flow forecast with latest billing and cost data",
+          "Identify any projected cash shortfalls; flag to management with proposed mitigations",
+          "Confirm adequate cash is available for next payroll run and major payment obligations"
+        ]
+      },
+      {
+        "name": "Balance Sheet Integrity",
+        "subCategories": [
+          "Fixed assets",
+          "Fixed assets",
+          "Fixed assets",
+          "Other BS items",
+          "Other BS items",
+          "Other BS items",
+          "FX revaluation"
+        ],
+        "items": [
+          "Update fixed asset register for any new engineering equipment, vehicles, or IT assets acquired",
+          "Confirm monthly depreciation is posted for all asset categories",
+          "Remove any fully depreciated or disposed assets from the register",
+          "Confirm intercompany/inter-branch balances are reconciled and in agreement",
+          "Verify deferred income balance reflects client advances and uninvoiced completed work",
+          "Prepare and review the monthly trial balance; confirm it is in balance",
+          "Have you revalued the FX assets"
+        ]
+      },
+      {
+        "name": "Tax & Regulatory Compliance",
+        "subCategories": [
+          "VAT",
+          "VAT",
+          "VAT",
+          "VAT",
+          "Withholding tax",
+          "Withholding tax",
+          "Other compliance",
+          "Other compliance"
+        ],
+        "items": [
+          "Reconcile output VAT on invoices raised and input VAT on approved supplier invoices",
+          "Prepare and file monthly VAT return by statutory deadline",
+          "Retain all VAT invoices and confirm they meet statutory requirements",
+          "Deferred revenue declaration",
+          "Confirm withholding tax deducted on professional fees and subconsultant payments",
+          "File withholding tax return and remit deducted amounts by due date",
+          "Review any upcoming regulatory or licensing renewal deadlines",
+          "Confirm all staff operating licences and professional memberships are current"
+        ]
+      },
+      {
+        "name": "Budget & Forecasting",
+        "subCategories": [
+          "Budget vs actuals",
+          "Budget vs actuals",
+          "Budget vs actuals",
+          "Pipeline"
+        ],
+        "items": [
+          "Prepare monthly budget vs actuals report by department and project",
+          "Document and explain all material variances to management",
+          "Update full-year revenue and cost forecast based on current project pipeline",
+          "Review business development pipeline; assess probability-weighted revenue for next 3 months"
+        ]
+      },
+      {
+        "name": "Management Reporting & Governance",
+        "subCategories": [
+          "Reports",
+          "Reports",
+          "Reports",
+          "Governance",
+          "Governance",
+          "Governance",
+          "Governance"
+        ],
+        "items": [
+          "Prepare monthly management accounts pack (P&L, balance sheet, cash flow, project summary)",
+          "Prepare project status dashboard — WIP, billings, collections, profitability by project",
+          "Circulate management accounts to directors/partners within agreed reporting deadline",
+          "Review and action any outstanding internal audit or management review findings",
+          "Confirm all financial authorisations and delegated authority limits are being observed",
+          "Update the financial risk register with any new risks identified this month",
+          "File all month-end working papers and supporting documents per document retention policy"
+        ]
+      },
+      {
+        "name": "TZ Company",
+        "subCategories": [
+          "Outside investment",
+          "Outside investment"
+        ],
+        "items": [
+          "Do payments corroborate to the invoices provided",
+          "Is the inter-company reconciliation signed"
+        ]
+      },
+      {
+        "name": "Archival & filing",
+        "subCategories": [
+          "Expenditure",
+          "Cash & bank",
+          "Contracts",
+          "Staff files",
+          "Management reports"
+        ],
+        "items": [
+          "Confirm if you have you uploaded the signed PVs alongside invoices to the files",
+          "Confirm if you have you uploaded the signed Bank recs and petty cash counts alongside invoices to the files",
+          "Confirm if you have you uploaded the signed contracts to the files including rent agreements, client contracts etc",
+          "Confirm if you have you uploaded the staff files and each staff file has ( a signed contract, contract matches the payroll, KRA PIN, NSSF, NHIF, Next of kin data)",
+          "Confirm if you have you uploaded the signed managementto the files"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tpl-ultimate",
+    "name": "Ultimate Monthly Checklist",
+    "clientTypes": [
+      "Ultimate"
+    ],
+    "sections": [
+      {
+        "name": "Revenue & Sales",
+        "subCategories": [
+          "Sales invoicing",
+          "Sales invoicing",
+          "Sales invoicing",
+          "Sales invoicing",
+          "Revenue recognition",
+          "Revenue recognition",
+          "Sales analysis",
+          "Sales analysis",
+          "Sales analysis"
+        ],
+        "items": [
+          "Confirm all sales orders dispatched this month are invoiced",
+          "Verify invoice values match approved price lists and customer contracts",
+          "Confirm credit notes raised are authorised and correctly posted",
+          "Reconcile total invoices issued to the dispatch/delivery register",
+          "Confirm revenue is recognised on delivery or per contractual terms",
+          "Post accruals for goods dispatched but not yet invoiced at month-end",
+          "Prepare monthly sales report by product line and customer segment",
+          "Compare actual sales volume and value to monthly budget; document variances",
+          "Review sales returns and rejections; confirm quality/warranty costs are captured"
+        ]
+      },
+      {
+        "name": "Cost of Goods Sold & Production",
+        "subCategories": [
+          "Direct materials",
+          "Direct materials",
+          "Direct materials",
+          "Direct labour",
+          "Direct labour",
+          "Manufacturing overhead",
+          "Manufacturing overhead",
+          "Manufacturing overhead",
+          "COGS close",
+          "COGS close"
+        ],
+        "items": [
+          "Confirm all raw material issues to production are posted against correct jobs/batches",
+          "Reconcile materials consumed to bills of materials (BOM) for production runs this month",
+          "Investigate and document significant BOM usage variances",
+          "Confirm production labour hours are recorded and allocated to jobs/cost centres",
+          "Reconcile direct labour cost to payroll; confirm overtime is approved and posted",
+          "Post monthly overhead absorption to production (machine time, floor space, utilities)",
+          "Reconcile actual vs absorbed overhead; record over/under-absorption",
+          "Confirm factory utility costs — electricity, water, maintenance — are posted",
+          "Post cost of goods sold journal for units sold; match to revenue recognised",
+          "Prepare gross margin report by product line; compare to standard margins"
+        ]
+      },
+      {
+        "name": "Inventory Management",
+        "subCategories": [
+          "Raw materials",
+          "Raw materials",
+          "Raw materials",
+          "WIP",
+          "WIP",
+          "WIP",
+          "Finished goods",
+          "Finished goods",
+          "Finished goods",
+          "Inventory valuation"
+        ],
+        "items": [
+          "Reconcile raw materials ledger to physical bin cards or warehouse system",
+          "Review slow-moving or excess raw materials; flag for management action",
+          "Confirm goods received notes (GRNs) are matched to supplier invoices and posted",
+          "Update work-in-progress (WIP) for all jobs in production at month-end",
+          "Reconcile WIP: opening balance + materials + labour + overhead − completed = closing WIP",
+          "Identify and investigate WIP jobs with costs significantly above standard",
+          "Perform or review perpetual inventory count for finished goods",
+          "Reconcile finished goods ledger to physical warehouse count",
+          "Identify slow-moving, obsolete, or damaged finished goods; assess write-down",
+          "Confirm inventory is valued at the lower of cost and net realisable value (NRV)"
+        ]
+      },
+      {
+        "name": "Overheads & Operating Expenditure",
+        "subCategories": [
+          "Invoice processing",
+          "Invoice processing",
+          "Accruals & prepayments",
+          "Accruals & prepayments",
+          "Accruals & prepayments",
+          "Cost control",
+          "Cost control",
+          "Depreciation"
+        ],
+        "items": [
+          "Confirm all supplier invoices are coded, approved, and posted to the correct cost centre",
+          "Confirm utilities, maintenance, and service contracts are invoiced and posted",
+          "Post accruals for costs incurred but not yet invoiced",
+          "Release prepayments proportionately; confirm remaining balances are valid",
+          "Accrue factory rent, insurance, and lease payments not yet invoiced",
+          "Compare actual overheads to budget by cost centre; flag variances above 10%",
+          "Review maintenance and repair costs; confirm capital vs revenue split is correct",
+          "Confirm monthly depreciation on plant, machinery, and factory equipment is posted"
+        ]
+      },
+      {
+        "name": "Advances",
+        "subCategories": [
+          "Staff advances",
+          "Staff advances",
+          "Staff advances",
+          "Staff advances",
+          "Supplier advances",
+          "Supplier advances",
+          "Supplier advances",
+          "Reconciliation"
+        ],
+        "items": [
+          "Review advances register; confirm all open balances per staff member",
+          "Follow up on all advances outstanding beyond the approved clearance period",
+          "Post retirement documents for advances liquidated this month",
+          "Confirm no new advance is issued to staff with an unretired prior advance",
+          "Reconcile advances to suppliers against purchase orders and delivery schedules",
+          "Confirm supplier advances are recorded as prepayments on the balance sheet",
+          "Follow up on supplier advances where goods/services are overdue for delivery",
+          "Confirm advances ledger balance agrees to balance sheet advances line"
+        ]
+      },
+      {
+        "name": "Receivables",
+        "subCategories": [
+          "Aged analysis",
+          "Aged analysis",
+          "Collections",
+          "Collections",
+          "Collections",
+          "Credit risk",
+          "Credit risk",
+          "Reconciliation"
+        ],
+        "items": [
+          "Generate aged receivables report; review all balances by customer",
+          "Identify invoices overdue by 30, 60, and 90+ days; escalate 90+ day items",
+          "Issue payment reminders to customers with overdue invoices",
+          "Post all cash receipts; confirm correct allocation to customer invoices",
+          "Follow up on disputed invoices; document reason and expected resolution date",
+          "Review credit limits for customers with growing or overdue balances",
+          "Assess recoverability of aged balances; raise bad debt provision where required",
+          "Reconcile receivables ledger total to balance sheet receivables line"
+        ]
+      },
+      {
+        "name": "Payables",
+        "subCategories": [
+          "Aged analysis",
+          "Aged analysis",
+          "Payments",
+          "Payments",
+          "Payments",
+          "Statutory payables",
+          "Statutory payables",
+          "Reconciliation",
+          "Reconciliation"
+        ],
+        "items": [
+          "Generate aged payables report; review all balances by supplier",
+          "Identify invoices due for payment this month; prepare payment run schedule",
+          "Process approved payment run; confirm bank transfers are authorised per policy",
+          "Confirm key supplier payments (raw materials, packaging) are made per agreed terms",
+          "Reconcile supplier statements to the payables ledger for key vendors",
+          "Confirm PAYE, NSSF, NHIF remittances are processed and receipts are filed",
+          "Confirm VAT payable is calculated correctly on purchases and sales",
+          "Reconcile payables ledger total to balance sheet payables line",
+          "Review long-outstanding creditor balances for continued validity"
+        ]
+      },
+      {
+        "name": "Payroll & Staff Costs",
+        "subCategories": [
+          "Payroll processing",
+          "Payroll processing",
+          "Payroll processing",
+          "Payroll processing",
+          "Statutory deductions",
+          "Statutory deductions",
+          "Labour allocation",
+          "Labour allocation"
+        ],
+        "items": [
+          "Confirm approved headcount, new starters, leavers, and salary changes for the month",
+          "Process monthly payroll for factory, warehouse, and office staff",
+          "Reconcile gross pay to approved salary and wage schedule",
+          "Issue payslips to all staff; confirm net pay agrees to bank transfer total",
+          "Confirm PAYE, NSSF, NHIF deductions are correctly computed and remitted",
+          "File statutory remittance returns by due dates and retain receipts",
+          "Allocate direct labour costs to production jobs and cost centres",
+          "Reconcile total payroll cost to the general ledger posting"
+        ]
+      },
+      {
+        "name": "Cash & Bank",
+        "subCategories": [
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Bank reconciliation",
+          "Petty cash",
+          "Petty cash",
+          "Petty cash",
+          "Petty cash",
+          "Cash management",
+          "Cash management",
+          "Cash management",
+          "Cash management",
+          "Cash forecasting",
+          "Cash forecasting",
+          "Cash forecasting"
+        ],
+        "items": [
+          "Obtain month-end bank statements for all bank accounts",
+          "Reconcile each bank account closing balance to the general ledger cash book balance",
+          "Identify and list all outstanding deposits in transit at month-end",
+          "Identify and list all outstanding cheques/payments not yet cleared",
+          "Investigate and clear all reconciling items older than 30 days",
+          "Confirm bank charges and interest debited are posted in the cash book",
+          "Ensure no unusual or unauthorised transactions appear on the bank statement",
+          "Perform physical petty cash count; confirm notes and coins tally with the cashbook",
+          "Reconcile petty cash physical balance to the petty cash ledger",
+          "Confirm all petty cash vouchers are approved, complete, and filed",
+          "Replenish petty cash to the approved float level; post replenishment journal",
+          "Confirm all inter-bank transfers are posted in both accounts and reconciled",
+          "Review month-end cash position against minimum operating balance requirements",
+          "Confirm no cheques have been presented but are older than 6 months (stale cheques)",
+          "Prepare month-end cash flow statement (actual receipts and payments)",
+          "Update rolling 3-month cash flow forecast with latest sales and cost data",
+          "Identify any projected cash shortfalls; flag to management with proposed mitigations",
+          "Confirm adequate cash is available for next payroll run and major payment obligations"
+        ]
+      },
+      {
+        "name": "Fixed Assets & Capital Expenditure",
+        "subCategories": [
+          "Fixed assets",
+          "Fixed assets",
+          "Fixed assets",
+          "Capex review",
+          "Capex review"
+        ],
+        "items": [
+          "Update fixed asset register for any new plant, machinery, or equipment acquired",
+          "Confirm assets disposed or written off are removed from the register",
+          "Confirm monthly depreciation is posted for all asset categories",
+          "Review capital expenditure against approved capex budget for the month",
+          "Confirm all capex items are properly capitalised and not expensed"
+        ]
+      },
+      {
+        "name": "Tax & Regulatory Compliance",
+        "subCategories": [
+          "VAT",
+          "VAT",
+          "VAT",
+          "Withholding tax",
+          "Other compliance"
+        ],
+        "items": [
+          "Reconcile output VAT on sales invoices and input VAT on approved purchase invoices",
+          "Prepare and file monthly VAT return by statutory deadline",
+          "Confirm VAT on imports and customs duties is correctly accounted for",
+          "Confirm withholding tax on professional fees and relevant payments is deducted and remitted",
+          "Review any upcoming regulatory, environmental, or licensing compliance deadlines"
+        ]
+      },
+      {
+        "name": "Budget Management",
+        "subCategories": [
+          "Budget vs actuals",
+          "Budget vs actuals",
+          "Budget vs actuals",
+          "Working capital"
+        ],
+        "items": [
+          "Prepare monthly budget vs actuals report — revenue, COGS, overheads, and EBITDA",
+          "Document and present all material budget variances to management",
+          "Update full-year production volume and revenue forecast",
+          "Review working capital position — inventory days, debtor days, creditor days"
+        ]
+      },
+      {
+        "name": "Management Reporting & Governance",
+        "subCategories": [
+          "Reports",
+          "Reports",
+          "Reports",
+          "Reports",
+          "Governance",
+          "Governance",
+          "Governance"
+        ],
+        "items": [
+          "Prepare monthly management accounts — P&L, balance sheet, and cash flow",
+          "Prepare production KPI report — output, yield, scrap rate, unit cost",
+          "Prepare gross margin analysis by product line",
+          "Circulate management accounts to directors within agreed reporting deadline",
+          "Review and action any outstanding internal control findings",
+          "Confirm all financial authorisations and approval limits are being observed",
+          "File all month-end working papers and supporting documents per retention policy"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tpl-general",
+    "name": "General Monthly Checklist",
+    "clientTypes": [
+      "Multiplier"
+    ],
+    "sections": [
+      {
+        "name": "Billing & Revenue",
+        "subCategories": [
+          "Invoicing",
+          "Revenue recognition",
+          "Revenue recognition"
+        ],
+        "items": [
+          "Raise and dispatch all invoices for the month",
+          "Post all revenue to the correct ledger accounts",
+          "Reconcile revenue to collections and bank"
+        ]
+      },
+      {
+        "name": "Cash & Bank",
+        "subCategories": [
+          "Bank reconciliation",
+          "Petty cash"
+        ],
+        "items": [
+          "Prepare and sign off monthly bank reconciliation",
+          "Reconcile petty cash and replenish float"
+        ]
+      },
+      {
+        "name": "Payables & Receivables",
+        "subCategories": [
+          "Creditors",
+          "Debtors"
+        ],
+        "items": [
+          "Prepare creditors aging and process approved payment run",
+          "Prepare debtors aging and follow up on overdue accounts"
+        ]
+      },
+      {
+        "name": "Payroll & Tax",
+        "subCategories": [
+          "Payroll",
+          "PAYE",
+          "VAT"
+        ],
+        "items": [
+          "Process and approve payroll",
+          "File PAYE returns by the 9th",
+          "File VAT return by the 20th"
+        ]
+      },
+      {
+        "name": "Reporting",
+        "subCategories": [
+          "Management accounts"
+        ],
+        "items": [
+          "Prepare month-end management accounts and circulate to management"
+        ]
+      }
     ]
   }
 ];
@@ -3320,7 +4838,17 @@ function initChecklistRealtime() {
 
 // ── Template helper ───────────────────────────────────────────────
 function clCreateFromTemplate(client, monthLabel, templateId) {
-  const tpl = CL_TEMPLATES.find(t => t.id === templateId) || CL_TEMPLATES[0];
+  let tpl = null;
+  if (templateId) {
+    tpl = CL_TEMPLATES.find(t => t.id === templateId);
+  }
+  if (!tpl && client) {
+    const clientLower = client.trim().toLowerCase();
+    tpl = CL_TEMPLATES.find(t => t.clientTypes.some(ct => ct.toLowerCase() === clientLower || clientLower.includes(ct.toLowerCase())));
+  }
+  if (!tpl) {
+    tpl = CL_TEMPLATES.find(t => t.id === "tpl-general") || CL_TEMPLATES[0];
+  }
   const id = createId();
   const sections = tpl.sections.map((s, si) => ({
     id: createId(),
@@ -3338,7 +4866,7 @@ function clCreateFromTemplate(client, monthLabel, templateId) {
       notes: ""
     }))
   }));
-  return { id, client, month: monthLabel, templateId, templateName: tpl.name, sections, createdAt: new Date().toISOString(), createdBy: activeProfileId };
+  return { id, client, month: monthLabel, templateId: tpl.id, templateName: tpl.name, sections, createdAt: new Date().toISOString(), createdBy: activeProfileId };
 }
 
 function clDuplicateToNextMonth(cl) {
@@ -3797,7 +5325,6 @@ function openNewChecklistModal() {
 
   const now = clCurrentMonth();
   const clientOpts = clients.filter(c => c !== "All clients").map(c => `<option value="${c}">${c}</option>`).join("");
-  const tplOpts = CL_TEMPLATES.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
 
   const overlay = document.createElement("div");
   overlay.className = "cl-new-modal-overlay";
@@ -3806,18 +5333,18 @@ function openNewChecklistModal() {
     <div class="cl-new-modal">
       <h3>📋 New Monthly Checklist</h3>
       <div class="cl-modal-field">
-        <label class="cl-modal-label">Client</label>
+        <label class="cl-modal-label">Company</label>
         <select class="cl-modal-select" id="clNewClient">${clientOpts}</select>
       </div>
       <div class="cl-modal-field">
         <label class="cl-modal-label">Month</label>
         <input class="cl-modal-input" type="month" id="clNewMonth" value="${now}" />
       </div>
-      <div class="cl-modal-field">
-        <label class="cl-modal-label">Template</label>
-        <select class="cl-modal-select" id="clNewTemplate">${tplOpts}</select>
+      <div class="cl-modal-field" style="margin-top: 0.5rem;">
+        <div id="clTemplateInfoBadge" style="background: var(--bg-surface-2, rgba(255,255,255,0.06)); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color, rgba(255,255,255,0.1)); font-size: 0.85rem; color: var(--text-secondary, #aaa);">
+        </div>
       </div>
-      <p id="clNewError" style="color:var(--red);font-size:0.82rem;margin:0.25rem 0 0;display:none;">A checklist for this client and month already exists.</p>
+      <p id="clNewError" style="color:var(--red);font-size:0.82rem;margin:0.5rem 0 0;display:none;">A checklist for this company and month already exists.</p>
       <div class="cl-modal-actions">
         <button class="outline-button compact-button" id="clNewCancel">Cancel</button>
         <button class="primary-button compact-button" id="clNewCreate">Create Checklist</button>
@@ -3826,27 +5353,29 @@ function openNewChecklistModal() {
 
   document.body.appendChild(overlay);
 
-  // Auto-select best template based on client
   const clientSel = overlay.querySelector("#clNewClient");
-  const tplSel = overlay.querySelector("#clNewTemplate");
-  function autoPickTemplate() {
-    const c = clientSel.value;
-    const best = CL_TEMPLATES.find(t => t.clientTypes.includes(c));
-    if (best) tplSel.value = best.id;
+  const badgeEl = overlay.querySelector("#clTemplateInfoBadge");
+
+  function updateTemplateBadge() {
+    const client = clientSel.value;
+    const clientLower = client.trim().toLowerCase();
+    const best = CL_TEMPLATES.find(t => t.clientTypes.some(ct => ct.toLowerCase() === clientLower || clientLower.includes(ct.toLowerCase()))) || CL_TEMPLATES.find(t => t.id === "tpl-general");
+    const totalItems = best.sections.reduce((acc, s) => acc + s.items.length, 0);
+    badgeEl.innerHTML = `<span style="font-weight:600; color:var(--text-main, #fff);">Auto-assigned Template:</span> ${escapeHtml(best.name)} <span style="font-size:0.8rem; opacity:0.8;">(${best.sections.length} sections, ${totalItems} tasks)</span>`;
   }
-  clientSel.addEventListener("change", autoPickTemplate);
-  autoPickTemplate();
+
+  clientSel.addEventListener("change", updateTemplateBadge);
+  updateTemplateBadge();
 
   overlay.querySelector("#clNewCancel").addEventListener("click", () => overlay.remove());
   overlay.querySelector("#clNewCreate").addEventListener("click", () => {
     const client = clientSel.value;
     const month = overlay.querySelector("#clNewMonth").value;
-    const templateId = tplSel.value;
     const errEl = overlay.querySelector("#clNewError");
     if (monthlyChecklists.some(c => c.client === client && c.month === month)) {
       errEl.style.display = "block"; return;
     }
-    const cl = clCreateFromTemplate(client, month, templateId);
+    const cl = clCreateFromTemplate(client, month);
     monthlyChecklists.push(cl);
     persistChecklists();
     saveChecklistToDB(cl);
