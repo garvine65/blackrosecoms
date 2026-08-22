@@ -5179,7 +5179,7 @@ function bindChecklistItemEvents(cl) {
       inp.focus();
       inp.addEventListener("blur", () => {
         sec.name = inp.value.trim() || sec.name;
-        persistChecklists(); renderChecklistDetail(cl.id);
+        persistChecklists(); saveChecklistToDB(cl); renderChecklistDetail(cl.id);
       });
       inp.addEventListener("keydown", e => { if (e.key === "Enter") inp.blur(); });
     });
@@ -5424,9 +5424,7 @@ document.getElementById("clDuplicateBtn").addEventListener("click", () => {
 });
 
 document.getElementById("clPrintBtn").addEventListener("click", () => {
-  clActiveTab = "summary";
-  renderChecklistDetail(clActiveId);
-  setTimeout(() => window.print(), 300);
+  window.print();
 });
 
 document.getElementById("clDeleteChecklistBtn").addEventListener("click", () => {

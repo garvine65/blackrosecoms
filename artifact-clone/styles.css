@@ -4308,9 +4308,9 @@ select option,
 @media print {
   .cl-inner-tabs, .cl-detail-actions, .cl-breadcrumb,
   .cl-back-btn, .cl-add-section-btn, .cl-add-item-row,
-  .cl-item-actions, .cl-section-delete-btn { display: none !important; }
-  .cl-status-btn, .cl-hod-btn { border: none; background: none; font-weight: 700; }
-  #clSummaryTab { display: block !important; }
+  .cl-item-actions, .cl-section-delete-btn, .cl-section-collapse-btn { display: none !important; }
+  .cl-status-btn, .cl-hod-btn { border: none; background: none; font-weight: 700; padding: 0; }
+  [hidden] { display: none !important; }
 }
 
 /* ══════════════════════════════════════════════════════════
