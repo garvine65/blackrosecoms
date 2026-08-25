@@ -987,8 +987,9 @@ function render() {
   const isUnwind = activeView === "unwind";
   const isChecklist = activeView === "checklist";
   const isPasswords = activeView === "passwords";
+  const isEvaluations = activeView === "evaluations";
 
-  clientTabs.style.display = isTask ? "" : "none";
+  clientTabs.style.display = "none";
   tasksHeading.style.display = isTask ? "" : "none";
   taskBoard.style.display = isTask ? "" : "none";
   newTaskButton.style.display = isTask ? "" : "none";
@@ -1002,6 +1003,46 @@ function render() {
   if (passwordsView) {
     passwordsView.hidden = !isPasswords;
     passwordsView.style.display = isPasswords ? "" : "none";
+  }
+
+  const evaluationsHeading = document.querySelector("#evaluationsHeading");
+  const evaluationsView = document.querySelector("#evaluationsView");
+  if (evaluationsHeading) {
+    evaluationsHeading.hidden = !isEvaluations;
+    evaluationsHeading.style.display = isEvaluations ? "" : "none";
+  }
+  if (evaluationsView) {
+    evaluationsView.hidden = !isEvaluations;
+    evaluationsView.style.display = isEvaluations ? "" : "none";
+    if (isEvaluations) {
+      // Ensure form is visible regardless of prior state
+      const fw = document.getElementById("formWrap");
+      const gt = document.getElementById("gate");
+      if (fw) fw.classList.add("active");
+      if (gt) gt.style.display = "none";
+
+      // Resolve active evaluator and call selectDirector so currentDirector is set
+      const activeProfile = profiles.find(p => p.id === activeProfileId);
+      if (activeProfile && typeof selectDirector === "function" && typeof DIRECTORS !== "undefined") {
+        const matched = DIRECTORS.find(d =>
+          d.id === activeProfile.id ||
+          d.name.toLowerCase() === (activeProfile.name || "").toLowerCase()
+        );
+        if (matched) {
+          selectDirector(matched, true);  // true = hide "change name" — logged-in user IS the evaluator
+        } else {
+          // Fallback: set name only and rebuild metrics
+          const evName = document.getElementById("evaluatorName");
+          if (evName && activeProfile) evName.textContent = activeProfile.name;
+          if (typeof buildMetrics === "function") buildMetrics();
+        }
+      } else {
+        // No profile match — just rebuild metrics
+        const evName = document.getElementById("evaluatorName");
+        if (evName && activeProfile) evName.textContent = (activeProfile && activeProfile.name) || "";
+        if (typeof buildMetrics === "function") buildMetrics();
+      }
+    }
   }
 
   const meetingsViewEl = document.querySelector("#meetingsView");
@@ -1076,6 +1117,12 @@ function renderSession() {
     } else {
       sidebarAvatar.innerHTML = escapeHtml(activeProfile.name[0] || "?");
     }
+  }
+
+  // Sync evaluator name with active profile in main app session
+  const evaluatorNameEl = document.getElementById("evaluatorName");
+  if (evaluatorNameEl && activeProfile) {
+    evaluatorNameEl.textContent = activeProfile.name;
   }
 }
 
@@ -1266,7 +1313,20 @@ function getTaskMonthLabel(task) {
 }
 
 function renderBoard() {
-  viewTitle.textContent = selectedClient;
+  if (selectedClient && selectedClient !== "All clients") {
+    viewTitle.innerHTML = `<span style="color:var(--gold, #cda44d);">${escapeHtml(selectedClient)}</span> <button type="button" id="resetClientBtn" class="outline-button compact-button" style="margin-left: 12px; font-size: 0.75rem; font-weight: normal; padding: 4px 10px; cursor: pointer; vertical-align: middle;">← All Clients</button>`;
+  } else {
+    viewTitle.textContent = "All Clients Tasks";
+  }
+
+  const resetBtn = document.getElementById("resetClientBtn");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      selectedClient = "All clients";
+      render();
+    });
+  }
+
   const scoped = visibleTasks();
   const openCount = scoped.filter((task) => task.status === "open").length;
   openTaskCount.textContent = `${openCount} open ${openCount === 1 ? "task" : "tasks"}`;
@@ -2307,18 +2367,33 @@ function renderDashboard() {
     const nextTask = [...open].sort((a, b) => new Date(a.due) - new Date(b.due))[0];
     const urgentCount = open.filter(t => t.priority === "urgent").length;
     const statusCls = overdue.length ? "dash-overdue" : dueToday.length ? "dash-today" : "dash-ok";
-    return `<div class="dashboard-card ${statusCls}">
-      <div class="dash-client-name">${client}</div>
+    return `<div class="dashboard-card ${statusCls}" data-client-name="${escapeHtml(client)}" style="cursor: pointer;" title="Click to view tasks for ${escapeHtml(client)}">
+      <div class="dash-client-name" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>${escapeHtml(client)}</span>
+        <span style="font-size:0.75rem; color:var(--gold, #cda44d); font-family:sans-serif; font-weight:normal;">Tasks ↗</span>
+      </div>
       <div class="dash-stats">
         <div class="dash-stat"><span class="dash-num ${overdue.length ? "stat-red" : ""}">${overdue.length}</span><span>Overdue</span></div>
         <div class="dash-stat"><span class="dash-num ${dueToday.length ? "stat-amber" : ""}">${dueToday.length}</span><span>Today</span></div>
         <div class="dash-stat"><span class="dash-num">${upcoming.length}</span><span>Upcoming</span></div>
         <div class="dash-stat"><span class="dash-num stat-green">${completed.length}</span><span>Done</span></div>
       </div>
-      ${urgentCount ? `<div class="dash-urgent-flag">\ud83d\udd34 ${urgentCount} urgent</div>` : ""}
-      ${nextTask ? `<div class="dash-next">Next: <strong>${escapeHtml(nextTask.title.slice(0, 50))}${nextTask.title.length > 50 ? "…" : ""}</strong> — ${formatDue(nextTask.due)}</div>` : `<div class="dash-next" style="color:var(--success);">\u2705 All clear</div>`}
+      ${urgentCount ? `<div class="dash-urgent-flag">🔴 ${urgentCount} urgent</div>` : ""}
+      ${nextTask ? `<div class="dash-next">Next: <strong>${escapeHtml(nextTask.title.slice(0, 50))}${nextTask.title.length > 50 ? "…" : ""}</strong> — ${formatDue(nextTask.due)}</div>` : `<div class="dash-next" style="color:var(--green, #25D366);">✅ All clear</div>`}
     </div>`;
   }).join("");
+
+  grid.querySelectorAll(".dashboard-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const clientName = card.dataset.clientName;
+      if (clientName) {
+        selectedClient = clientName;
+        activeView = "tasks";
+        render();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
+  });
 }
 
 // ── Feature 7: Workload View ──────────────────────────────────────────────────

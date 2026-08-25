@@ -145,3 +145,25 @@ drop policy if exists "All access to monthly_checklists" on public.monthly_check
 create policy "All access to monthly_checklists" on public.monthly_checklists for all using (true) with check (true);
 
 
+-- 10. Performance Evaluations Table
+create table if not exists public.evaluations (
+  id uuid primary key default uuid_generate_v4(),
+  director_id text not null,                           -- e.g. 'wangui', 'mercy', 'diane'
+  director_name text not null,                         -- display name e.g. 'Wangui Muchiri'
+  employee_name text not null default 'Senior Oversight Accountant',
+  ratings jsonb not null default '{}'::jsonb,          -- { quality, compliance, communication, timeliness, leadership, overall } each 1–5
+  strengths text,
+  improvement text,
+  comments text,
+  period text not null default '2026-Q3',              -- e.g. '2026 Annual', '2026-Q3'
+  status text not null default 'submitted',            -- 'draft' | 'submitted'
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table public.evaluations enable row level security;
+drop policy if exists "All access to evaluations" on public.evaluations;
+create policy "All access to evaluations" on public.evaluations
+  for all to authenticated using (true) with check (true);
+
+

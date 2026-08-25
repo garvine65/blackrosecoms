@@ -2,77 +2,41 @@
    THEME SYSTEM — light (default) + dark-gold mode
    ═══════════════════════════════════════════════════════════ */
 
-:root {
-  /* Brand palette */
-  --ink: #14233b;
-  --muted: #897f73;
-  --paper: #f8f6f0;
-  --line: #e4ded3;
-  --navy: #14233b;
-  --red: #b33a3a;
-  --red-soft: #f6e3e1;
-  --amber: #b77a17;
-  --amber-soft: #fff0da;
-  --green: #2f7b58;
-  --green-soft: #e6f4ec;
-  --white: #fffdf9;
-
-  /* Semantic theme tokens (light values) */
-  --bg-body: #14110e;
-  --bg-app: #f8f6f0;
-  --bg-surface: rgba(255, 253, 249, 0.45);
-  --bg-panel: rgba(255, 253, 249, 0.38);
-  --bg-input: rgba(255, 255, 255, 0.72);
-  --bg-card: rgba(255, 253, 249, 0.38);
-  --bg-dialog: rgba(255, 253, 249, 0.68);
-  --bg-toggle: rgba(228, 222, 211, 0.4);
-  --bg-header: rgba(248, 246, 240, 0.48);
-  --bg-tab-active: var(--navy);
-  --border-surface: rgba(228, 222, 211, 0.72);
-  --border-input: rgba(228, 222, 211, 0.74);
-  --text-on-primary: #ffffff;
-  --primary: var(--navy);
-  --primary-soft: rgba(20, 35, 59, 0.1);
-  --accent: var(--amber);
-  --logo-src: url("./assets/logo.jpeg");
-
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color-scheme: light;
-}
-
-/* ── Dark-gold theme ───────────────────────────────────── */
+:root,
 [data-theme="dark"] {
-  --ink: #f3ede2;
-  --muted: #9e9382;
-  --paper: #0c0d12;
-  --line: rgba(212, 175, 55, 0.14);
-  --navy: #d4af37;         /* gold replaces navy as primary */
-  --red: #ef4444;
-  --red-soft: rgba(239, 68, 68, 0.15);
-  --amber: #f59e0b;
-  --amber-soft: rgba(245, 158, 11, 0.15);
-  --green: #10b981;
-  --green-soft: rgba(16, 185, 129, 0.15);
-  --white: #14161f;
+  /* Evaluator luxury dark-gold palette */
+  --ink: #f4efe4;
+  --muted: #c9c2b2;
+  --paper: #0a0908;
+  --line: #3a3226;
+  --navy: #e8c877;
+  --red: #8a4a3f;
+  --red-soft: rgba(138, 74, 63, 0.2);
+  --amber: #cda44d;
+  --amber-soft: rgba(205, 164, 77, 0.15);
+  --green: #25D366;
+  --green-soft: rgba(37, 211, 102, 0.15);
+  --white: #141210;
 
-  --bg-body: #08090d;
-  --bg-app: #0c0e14;
-  --bg-surface: rgba(18, 21, 31, 0.75);
-  --bg-panel: rgba(16, 18, 26, 0.65);
-  --bg-input: rgba(255, 255, 255, 0.05);
-  --bg-card: rgba(18, 21, 31, 0.65);
-  --bg-dialog: rgba(16, 18, 26, 0.92);
-  --bg-toggle: rgba(212, 175, 55, 0.12);
-  --bg-header: rgba(12, 14, 20, 0.85);
-  --bg-tab-active: #d4af37;
-  --border-surface: rgba(212, 175, 55, 0.18);
-  --border-input: rgba(212, 175, 55, 0.22);
-  --text-on-primary: #090a0f;
-  --primary: #d4af37;
-  --primary-soft: rgba(212, 175, 55, 0.15);
-  --accent: #f59e0b;
-  --logo-src: url("./assets/darkmode.png");
+  --bg-body: #0a0908;
+  --bg-app: #0a0908;
+  --bg-surface: #1b1815;
+  --bg-panel: #141210;
+  --bg-input: #141210;
+  --bg-card: #1b1815;
+  --bg-dialog: #141210;
+  --bg-toggle: #1b1815;
+  --bg-header: #0a0908;
+  --bg-tab-active: #cda44d;
+  --border-surface: #3a3226;
+  --border-input: #3a3226;
+  --text-on-primary: #151109;
+  --primary: #cda44d;
+  --primary-soft: rgba(205, 164, 77, 0.15);
+  --accent: #e8c877;
+  --logo-src: none;
 
+  font-family: 'Helvetica Neue', Arial, sans-serif;
   color-scheme: dark;
 }
 
@@ -102,17 +66,6 @@
   box-shadow: 0 4px 14px rgba(201, 149, 42, 0.25);
 }
 
-[data-theme="dark"] .theme-toggle {
-  border-color: rgba(201, 149, 42, 0.4);
-  background: rgba(201, 149, 42, 0.08);
-  box-shadow: 0 0 0 1px rgba(201, 149, 42, 0.15) inset;
-}
-
-[data-theme="dark"] .theme-toggle:hover {
-  background: rgba(201, 149, 42, 0.18);
-  box-shadow: 0 4px 14px rgba(201, 149, 42, 0.3);
-}
-
 * {
   box-sizing: border-box;
 }
@@ -123,7 +76,7 @@
 
 body {
   margin: 0;
-  background: var(--bg-body);
+  background: radial-gradient(ellipse at top, #17140f 0%, #0a0908 55%), #0a0908 !important;
   color: var(--ink);
   transition: background 0.3s ease, color 0.3s ease;
 }
@@ -144,30 +97,20 @@ button {
   isolation: isolate;
   min-height: 100vh;
   overflow: hidden;
-  background: var(--bg-app);
+  background: radial-gradient(ellipse at top, #17140f 0%, #0a0908 55%), #0a0908 !important;
   transition: background 0.3s ease;
   display: flex;
   flex-direction: row;
 }
 
-/* Light mode gradient overlay */
-:root:not([data-theme="dark"]) .app-shell {
-  background:
-    linear-gradient(rgba(248, 246, 240, 0.65), rgba(248, 246, 240, 0.72)),
-    radial-gradient(circle at 47% 18%, rgba(255, 255, 255, 0.70), transparent 32rem),
-    var(--paper);
-}
-
-/* Dark mode background with full-screen Black Rose logo watermark */
-[data-theme="dark"] .app-shell {
-  background-color: #08090d;
-  background-image:
-    radial-gradient(circle at 50% 50%, rgba(13, 14, 20, 0.45), rgba(8, 9, 13, 0.88)),
-    url("./assets/darkmode.png");
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-size: cover;
-  background-attachment: fixed;
+/* Remove background photo watermarks across login, brand, app shell */
+.brand-watermark,
+.login-watermark,
+.auth-watermark,
+.app-shell::before,
+.app-shell::after {
+  display: none !important;
+  background-image: none !important;
 }
 
 [data-theme="dark"] .sidebar-content {
@@ -4596,4 +4539,20 @@ select option,
 
   /* Sidebar full width on very small phones */
   .sidebar { width: 85vw !important; min-width: unset !important; }
+}
+
+/* ── Permanently Hide Top Client Tabs Bar (Replaced by Clients Dashboard) ── */
+#clientTabs,
+.client-tabs,
+.tabs {
+  display: none !important;
+}
+
+.dashboard-card {
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease !important;
+}
+.dashboard-card:hover {
+  transform: translateY(-4px) !important;
+  border-color: #cda44d !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.7), 0 0 12px rgba(205, 164, 77, 0.25) !important;
 }
