@@ -538,6 +538,239 @@ document.addEventListener('click', async (e) => {
     return;
   }
 
+  // History storage implementation
+const EVAL_HISTORY_STORAGE_KEY = 'blackrose_eval_history_records';
+
+function getEvaluationHistory() {
+  try {
+    const raw = localStorage.getItem(EVAL_HISTORY_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveEvaluationRecord(record) {
+  try {
+    const history = getEvaluationHistory();
+    history.unshift(record);
+    localStorage.setItem(EVAL_HISTORY_STORAGE_KEY, JSON.stringify(history));
+    if (window.supabase && typeof window.supabase.from === 'function') {
+      window.supabase.from('evaluations').insert([record]).catch(console.error);
+    }
+  } catch (e) {
+    console.error('Failed to save evaluation record:', e);
+  }
+}
+
+function openHistoryDrawer() {
+  const panel = document.getElementById('historyPanel');
+  const overlay = document.getElementById('historyOverlay');
+  if (panel) {
+    panel.classList.add('active');
+    panel.setAttribute('aria-hidden', 'false');
+  }
+  if (overlay) overlay.classList.add('active');
+  loadAndRenderHistory();
+}
+
+function closeHistoryDrawer() {
+  const panel = document.getElementById('historyPanel');
+  const overlay = document.getElementById('historyOverlay');
+  if (panel) {
+    panel.classList.remove('active');
+    panel.setAttribute('aria-hidden', 'true');
+  }
+  if (overlay) overlay.classList.remove('active');
+}
+
+function loadAndRenderHistory() {
+  const listEl = document.getElementById('historyList');
+  if (!listEl) return;
+
+  const history = getEvaluationHistory();
+  const dirFilter = document.getElementById('historyDirectorFilter')?.value || '';
+  const periodFilter = document.getElementById('historyPeriodFilter')?.value || '';
+  const searchText = (document.getElementById('historySearchInput')?.value || '').toLowerCase();
+
+  const filtered = history.filter(item => {
+    if (dirFilter && item.evaluatorId !== dirFilter) return false;
+    if (periodFilter && item.period !== periodFilter) return false;
+    if (searchText) {
+      const combined = `${item.subjectName || ''} ${item.roleName || ''} ${item.evaluatorName || ''}`.toLowerCase();
+      if (!combined.includes(searchText)) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    listEl.innerHTML = '<div class="history-empty">No previous evaluations saved yet.</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  filtered.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'history-card';
+    const ovVal = item.ratings ? (item.ratings.overall || 0) : 0;
+    const ratingLabels = { 1: 'Poor', 2: 'Fair', 3: 'Good', 4: 'Very Good', 5: 'Excellent' };
+
+    card.innerHTML = `
+      <div class="history-card-head">
+        <div>
+          <div class="history-card-title">${item.subjectName || 'Evaluation Subject'}</div>
+          <div style="font-size:0.75rem;color:#aaa;">${item.roleName || ''}</div>
+        </div>
+        <div class="history-card-date">${item.dateStr || ''}</div>
+      </div>
+      <div class="history-card-meta">
+        <div><span>Evaluator:</span> <b>${item.evaluatorName || ''}</b></div>
+        <div><span>Period:</span> <b>${item.period || ''}</b></div>
+      </div>
+      <div class="history-card-score">
+        <span>Overall Rating:</span>
+        <b>${'★'.repeat(ovVal)}${'☆'.repeat(5 - ovVal)} (${ratingLabels[ovVal] || 'N/A'})</b>
+      </div>
+      <div class="history-card-actions">
+        <button type="button" class="history-load-btn" data-id="${item.id}">📋 Load Form</button>
+        <button type="button" class="history-pdf-btn" data-id="${item.id}">📄 Download PDF</button>
+        <button type="button" class="history-del-btn" data-id="${item.id}">🗑️ Delete</button>
+      </div>
+    `;
+    listEl.appendChild(card);
+  });
+}
+
+// Global button click delegation
+document.addEventListener('click', async (e) => {
+  const target = e.target.closest('button, a');
+  if (!target) return;
+
+  // 1. Submit & Send WhatsApp button
+  if (target.id === 'submitBtn' || target.closest('#submitBtn')) {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Generating PDF...';
+    }
+
+    const cleanName = currentDirector.name.replace(/[^a-zA-Z0-9]/g, '_');
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    const pdfFilename = `BlackRose_Evaluation_${cleanName}_${dateStamp}.pdf`;
+
+    try {
+      // Save completion timestamp locally
+      const payload = {
+        director: currentDirector.name,
+        ratings: ratings,
+        freeText: freeText,
+        submittedAt: new Date().toISOString()
+      };
+      storage.set('eval:' + currentDirector.id, JSON.stringify(payload));
+      buildDirectorGrid();
+
+      // 1. Generate & download PDF
+      await generatePDFBlobAndSave(pdfFilename);
+
+      // 2. Prepare WhatsApp URL
+      const waPhoneEl = document.getElementById('waPhone');
+      const rawPhone = waPhoneEl ? waPhoneEl.value.trim() : '';
+      const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+      
+      const messageText = `Hello, I have completed the Performance Evaluation for ${document.getElementById('evalSubjectName')?.value.trim() || 'the Senior Oversight Accountant'} as Director (${currentDirector.name}).\n\nPlease find my attached evaluation PDF file: ${pdfFilename}`;
+      const encodedText = encodeURIComponent(messageText);
+
+      let waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+      if (cleanPhone.length >= 7) {
+        waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedText}`;
+      }
+
+      // 3. Show Guidance Modal
+      const waPdfName = document.getElementById('waPdfName');
+      const waLaunchLink = document.getElementById('waLaunchLink');
+      const waModal = document.getElementById('waModal');
+
+      if (waPdfName) waPdfName.textContent = pdfFilename;
+      if (waLaunchLink) waLaunchLink.href = waUrl;
+      if (waModal) waModal.classList.add('active');
+
+      // Auto-open WhatsApp after a brief delay so download registers
+      setTimeout(() => {
+        try {
+          window.open(waUrl, '_blank');
+        } catch (err) {
+          console.warn('WhatsApp window popup blocked:', err);
+        }
+      }, 800);
+
+      showToast('PDF downloaded! Opening WhatsApp...');
+
+    } catch (err) {
+      console.error('PDF Generation Error:', err);
+      showToast('PDF Error: ' + (err.message || err));
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right:8px;vertical-align:-3px;"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+          Generate PDF & Send via WhatsApp
+        `;
+      }
+    }
+    return;
+  }
+
+  // 2. Preview PDF Sheet button
+  if (target.id === 'previewBtn' || target.closest('#previewBtn')) {
+    e.preventDefault();
+    if (!validateForm()) return;
+    populatePDFTemplate();
+    const previewModal = document.getElementById('previewModal');
+    if (previewModal) previewModal.classList.add('active');
+    return;
+  }
+
+  // 3. Modal close button
+  if (target.id === 'modalCloseBtn' || target.closest('#modalCloseBtn')) {
+    e.preventDefault();
+    const previewModal = document.getElementById('previewModal');
+    if (previewModal) previewModal.classList.remove('active');
+    return;
+  }
+
+  // 4. Modal Download PDF button
+  if (target.id === 'modalDownloadBtn' || target.closest('#modalDownloadBtn')) {
+    e.preventDefault();
+    if (!validateForm()) return;
+    target.disabled = true;
+    target.textContent = 'Downloading...';
+    const cleanName = currentDirector.name.replace(/[^a-zA-Z0-9]/g, '_');
+    const pdfFilename = `BlackRose_Evaluation_${cleanName}.pdf`;
+    try {
+      await generatePDFBlobAndSave(pdfFilename);
+      showToast('PDF downloaded successfully.');
+    } catch (err) {
+      showToast('Error saving PDF: ' + err.message);
+    } finally {
+      target.disabled = false;
+      target.textContent = 'Download PDF';
+    }
+    return;
+  }
+
+  // 5. Modal Send via WhatsApp button
+  if (target.id === 'modalWaBtn' || target.closest('#modalWaBtn')) {
+    e.preventDefault();
+    const previewModal = document.getElementById('previewModal');
+    if (previewModal) previewModal.classList.remove('active');
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) submitBtn.click();
+    return;
+  }
+
   // 6. History Toggle Button
   if (target.id === 'historyToggleBtn' || target.closest('#historyToggleBtn')) {
     e.preventDefault();
@@ -667,20 +900,22 @@ document.addEventListener('input', (e) => {
 // Auto-save submitted evaluations into history
 const _origGeneratePDF = generatePDFBlobAndSave;
 generatePDFBlobAndSave = async function(filename) {
-  const record = {
-    id: 'eval-' + Date.now(),
-    evaluatorId: currentDirector ? currentDirector.id : 'greg',
-    evaluatorName: currentDirector ? currentDirector.name : 'Gregory Nyataige',
-    subjectName: document.getElementById('evalSubjectName')?.value.trim() || 'Senior Oversight Accountant',
-    roleName: document.getElementById('evalSubjectRole')?.value.trim() || 'Senior Oversight Accountant',
-    evalType: document.getElementById('evalTypeSelect')?.value || 'Performance Evaluation',
-    period: document.getElementById('evalPeriodSelect')?.value.trim() || 'Last 3 Months',
-    ratings: { ...ratings },
-    freeText: { ...freeText },
-    createdAt: new Date().toISOString(),
-    dateStr: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-  };
-  saveEvaluationRecord(record);
+  if (typeof saveEvaluationRecord === 'function') {
+    const record = {
+      id: 'eval-' + Date.now(),
+      evaluatorId: currentDirector ? currentDirector.id : 'greg',
+      evaluatorName: currentDirector ? currentDirector.name : 'Gregory Nyataige',
+      subjectName: document.getElementById('evalSubjectName')?.value.trim() || 'Senior Oversight Accountant',
+      roleName: document.getElementById('evalSubjectRole')?.value.trim() || 'Senior Oversight Accountant',
+      evalType: document.getElementById('evalTypeSelect')?.value || 'Performance Evaluation',
+      period: document.getElementById('evalPeriodSelect')?.value.trim() || 'Last 3 Months',
+      ratings: { ...ratings },
+      freeText: { ...freeText },
+      createdAt: new Date().toISOString(),
+      dateStr: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    };
+    saveEvaluationRecord(record);
+  }
   return _origGeneratePDF(filename);
 };
 
