@@ -236,6 +236,7 @@ button {
   border-radius: 50%;
   object-fit: cover;
   border: 1.5px solid rgba(255, 255, 255, 0.12);
+  background: #ffffff;
   flex-shrink: 0;
 }
 
@@ -4597,7 +4598,7 @@ select option,
   /* Sidebar full width on very small phones */
   .sidebar { width: 85vw !important; min-width: unset !important; }
 }
-:root{
+#evaluationsView, .evaluations-view, .preview-modal, .wa-modal, .history-panel {
   --bg:#0a0908;
   --bg-panel:#141210;
   --bg-card:#1b1815;
@@ -4609,11 +4610,9 @@ select option,
   --cream-dim:#c9c2b2;
   --danger:#8a4a3f;
   --radius:2px;
-  font-size:16px;
 }
-*{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
-body, #evaluationsView{
+
+#evaluationsView {
   background:
     radial-gradient(ellipse at top, #17140f 0%, #0a0908 55%),
     var(--bg);
