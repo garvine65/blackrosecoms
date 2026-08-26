@@ -987,6 +987,7 @@ function render() {
   const isUnwind = activeView === "unwind";
   const isChecklist = activeView === "checklist";
   const isPasswords = activeView === "passwords";
+  const isEvaluations = activeView === "evaluations";
 
   clientTabs.style.display = isTask ? "" : "none";
   tasksHeading.style.display = isTask ? "" : "none";
@@ -1002,6 +1003,12 @@ function render() {
   if (passwordsView) {
     passwordsView.hidden = !isPasswords;
     passwordsView.style.display = isPasswords ? "" : "none";
+  }
+
+  const evaluationsViewEl = document.querySelector("#evaluationsView");
+  if (evaluationsViewEl) {
+    evaluationsViewEl.hidden = !isEvaluations;
+    evaluationsViewEl.style.display = isEvaluations ? "" : "none";
   }
 
   const meetingsViewEl = document.querySelector("#meetingsView");

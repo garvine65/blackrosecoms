@@ -129,6 +129,10 @@
             <span class="sidebar-nav-icon">🔑</span>
             <span class="sidebar-nav-label">Passwords</span>
           </button>
+          <button class="sidebar-nav-item" data-sidebar-view="evaluations" id="sidebarEvaluations">
+            <span class="sidebar-nav-icon">⭐</span>
+            <span class="sidebar-nav-label">Evaluations</span>
+          </button>
           <a class="sidebar-nav-item sidebar-nav-link" href="https://blackrosecoke-my.sharepoint.com/:f:/r/personal/diane_meria_blackrose_co_ke/Documents/Black%20Rose%202026/Clients/Accounting?e=5%3a765b0745b1874e948f16b25f39c96e63&sharingv2=true&fromShare=true&at=9" target="_blank" rel="noopener noreferrer" id="sidebarFiles">
             <span class="sidebar-nav-icon">📂</span>
             <span class="sidebar-nav-label">Files</span>
@@ -505,6 +509,110 @@
             </section>
           </div>
         </div>
+
+        <!-- Performance Evaluation View -->
+        <div id="evaluationsView" class="evaluations-view" hidden>
+          <header class="eval-header">
+            <div class="logo-wrap"><img src="../black-rose-eval/logo.png" alt="Black Rose Consultancy logo"></div>
+            <h1 class="serif-display">BLACK ROSE <span>CONSULTANCY</span></h1>
+            <div class="subtitle">Performance Evaluation</div>
+            <div class="rule"></div>
+            <div class="review-period">Role: <b>Senior Oversight Accountant</b> &nbsp;·&nbsp; Review period: <b id="periodLabel">Last 3 Months</b></div>
+            <div class="header-actions">
+              <button class="history-toggle-btn" id="historyToggleBtn" title="View previous evaluations">📋 History</button>
+            </div>
+          </header>
+
+          <div class="shell">
+            <!-- STEP 1: choose evaluator gate -->
+            <div id="gate" class="gate">
+              <p class="lead">Select your name to begin the evaluation.</p>
+              <div class="director-grid" id="directorGrid"></div>
+            </div>
+
+            <!-- STEP 2: form -->
+            <div id="formWrap" class="form-wrap">
+              <div class="evaluator-banner">
+                <div>Evaluator&nbsp;&nbsp;<span class="name" id="evaluatorName"></span></div>
+                <button class="switch" id="switchBtn">change name</button>
+              </div>
+
+              <!-- Evaluation Details -->
+              <div class="section-title">Evaluation Subject & Details</div>
+              <div class="eval-details-card">
+                <div class="eval-details-grid">
+                  <div class="eval-field">
+                    <label for="evalSubjectName">Person Being Reviewed (Employee Name) *</label>
+                    <input type="text" id="evalSubjectName" placeholder="e.g. Jane Doe">
+                  </div>
+                  <div class="eval-field">
+                    <label for="evalSubjectRole">Role Being Reviewed *</label>
+                    <input type="text" id="evalSubjectRole" placeholder="e.g. Senior Oversight Accountant" value="Senior Oversight Accountant">
+                  </div>
+                  <div class="eval-field">
+                    <label for="evalTypeSelect">Evaluation Type</label>
+                    <select id="evalTypeSelect">
+                      <option value="Performance Evaluation">Performance Evaluation</option>
+                      <option value="Quarterly Review">Quarterly Review</option>
+                      <option value="Annual Performance Review">Annual Performance Review</option>
+                      <option value="Probation Assessment">Probation Assessment</option>
+                      <option value="Mid-Year Review">Mid-Year Review</option>
+                    </select>
+                  </div>
+                  <div class="eval-field">
+                    <label for="evalPeriodSelect">Review Period</label>
+                    <input type="text" id="evalPeriodSelect" placeholder="e.g. Last 3 Months" value="Last 3 Months">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Optional Recipient Phone for WhatsApp -->
+              <div class="whatsapp-config">
+                <label for="waPhone">Recipient WhatsApp Number (Optional):</label>
+                <input type="text" id="waPhone" placeholder="e.g. 254712345678 (leave blank if sending to standard contact)">
+              </div>
+
+              <div class="section-title">Performance Metrics</div>
+              <div id="metricsContainer"></div>
+
+              <div class="metric overall-row" id="overallMetric">
+                <div>
+                  <h3>Overall Rating</h3>
+                </div>
+                <div class="stars" data-metric="overall"></div>
+              </div>
+
+              <div class="section-title">Narrative Feedback</div>
+
+              <div class="metric">
+                <div class="metric-head"><h3>Key Strengths</h3></div>
+                <p class="metric-desc">What has this person done particularly well over the review period?</p>
+                <textarea data-field="strengths" placeholder="e.g. Reliable month-end close, strong attention to reconciliation detail..."></textarea>
+              </div>
+
+              <div class="metric">
+                <div class="metric-head"><h3>Areas Requiring Improvement</h3></div>
+                <p class="metric-desc">Be specific — this feedback is meant to guide growth over the next quarter.</p>
+                <textarea data-field="improvement" placeholder="e.g. Could improve turnaround time on variance reports..."></textarea>
+              </div>
+
+              <div class="metric">
+                <div class="metric-head"><h3>Additional Comments</h3></div>
+                <p class="metric-desc">Anything else you'd like to note.</p>
+                <textarea data-field="comments" placeholder="Optional"></textarea>
+              </div>
+
+              <div class="submit-row">
+                <button class="submit-btn whatsapp-btn" id="submitBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right:8px;vertical-align:-3px;"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                  Generate PDF & Send via WhatsApp
+                </button>
+                <button class="preview-btn" id="previewBtn">Preview PDF Sheet</button>
+                <div class="submit-note" id="submitNote">Generates a formatted PDF report and opens WhatsApp to send to management.</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
       </div><!-- /.sidebar-content -->
     </div>
@@ -756,6 +864,133 @@
       </div>
     </dialog>
 
+    <!-- WhatsApp Action Guidance Modal -->
+    <div id="waModal" class="wa-modal">
+      <div class="wa-modal-card">
+        <div class="wa-modal-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="#25D366"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+        </div>
+        <h3>Evaluation PDF Ready!</h3>
+        <div class="wa-steps">
+          <p><strong>Step 1:</strong> Your PDF file (<b id="waPdfName">evaluation.pdf</b>) has been generated & saved to your downloads.</p>
+          <p><strong>Step 2:</strong> WhatsApp is launching. Click below to proceed if it didn't open automatically.</p>
+        </div>
+        <div class="wa-modal-actions">
+          <a id="waLaunchLink" href="#" target="_blank" class="wa-open-btn">Open WhatsApp Now</a>
+          <button id="waCloseBtn" class="wa-close-btn">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Panel Drawer -->
+    <div id="historyPanel" class="history-panel" aria-hidden="true">
+      <div class="history-panel-inner">
+        <div class="history-header">
+          <h2>Previous Evaluations</h2>
+          <button class="history-close" id="historyCloseBtn" aria-label="Close history">&times;</button>
+        </div>
+        <div class="history-filters">
+          <div class="history-filter-row">
+            <select id="historyDirectorFilter">
+              <option value="">All Evaluators</option>
+              <option value="wangui-muchiri">Wangui Muchiri</option>
+              <option value="mercy">Mercy Waweru</option>
+              <option value="diane-marie">Diane Meria</option>
+              <option value="greg">Gregory Nyataige</option>
+            </select>
+            <select id="historyPeriodFilter">
+              <option value="">All Periods</option>
+            </select>
+          </div>
+          <input type="text" id="historySearchInput" placeholder="Search by employee name or role...">
+        </div>
+        <div id="historyList" class="history-list">
+          <div class="history-empty">Loading evaluations...</div>
+        </div>
+      </div>
+    </div>
+    <div class="history-overlay" id="historyOverlay"></div>
+
+    <!-- Interactive PDF Preview Modal -->
+    <div id="previewModal" class="preview-modal">
+      <div class="preview-modal-dialog">
+        <div class="preview-modal-header">
+          <div class="preview-title">Document Preview — Evaluation Report</div>
+          <div class="preview-modal-actions">
+            <button type="button" id="modalDownloadBtn" class="modal-btn-download">Download PDF</button>
+            <button type="button" id="modalWaBtn" class="modal-btn-wa">Send via WhatsApp</button>
+            <button type="button" id="modalCloseBtn" class="modal-btn-close" aria-label="Close">&times;</button>
+          </div>
+        </div>
+        <div class="preview-modal-body">
+          <div id="pdfTemplate" class="pdf-container">
+            <div class="pdf-header">
+              <div class="pdf-logo-box"><img src="../black-rose-eval/logo.png" alt="Black Rose Logo" id="pdfLogoImg"></div>
+              <h2>BLACK ROSE CONSULTANCY</h2>
+              <div class="pdf-sub">PERFORMANCE EVALUATION REPORT</div>
+              <div class="pdf-divider"></div>
+            </div>
+
+            <div class="pdf-meta-grid">
+              <div class="pdf-meta-item"><span>Person Being Reviewed:</span> <b id="pdfMetaSubject">Senior Oversight Accountant</b></div>
+              <div class="pdf-meta-item"><span>Role Being Reviewed:</span> <b id="pdfMetaRole">Senior Oversight Accountant</b></div>
+              <div class="pdf-meta-item"><span>Evaluation Type:</span> <b id="pdfMetaEvalType">Performance Evaluation</b></div>
+              <div class="pdf-meta-item"><span>Review Period:</span> <b id="pdfMetaPeriod">Last 3 Months</b></div>
+              <div class="pdf-meta-item"><span>Evaluator Name:</span> <b id="pdfMetaDirector"></b></div>
+              <div class="pdf-meta-item"><span>Date Submitted:</span> <b id="pdfMetaDate"></b></div>
+            </div>
+
+            <div class="pdf-heading">1. PERFORMANCE METRICS EVALUATION</div>
+            <table class="pdf-table">
+              <thead>
+                <tr>
+                  <th>Metric Name & Description</th>
+                  <th style="width:140px;text-align:center;">Score</th>
+                  <th style="width:120px;text-align:center;">Rating</th>
+                </tr>
+              </thead>
+              <tbody id="pdfTableBody">
+              </tbody>
+            </table>
+
+            <div class="pdf-heading">2. QUALITATIVE NARRATIVE FEEDBACK</div>
+            
+            <div class="pdf-block">
+              <div class="pdf-block-title">A. Key Strengths</div>
+              <div class="pdf-block-content" id="pdfStrengthsText"></div>
+            </div>
+
+            <div class="pdf-block">
+              <div class="pdf-block-title">B. Areas Requiring Improvement</div>
+              <div class="pdf-block-content" id="pdfImprovementText"></div>
+            </div>
+
+            <div class="pdf-block">
+              <div class="pdf-block-title">C. Additional Comments</div>
+              <div class="pdf-block-content" id="pdfCommentsText"></div>
+            </div>
+
+            <div class="pdf-signature-section">
+              <div class="pdf-sign-box">
+                <div class="pdf-sign-line"></div>
+                <p>Signature — <span id="pdfSignName"></span> (Director)</p>
+              </div>
+            </div>
+
+            <div class="pdf-footer-note">
+              Confidential Document — Prepared for Black Rose Consultancy Management & Review
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="../black-rose-eval/logo_b64.js"></script>
+    <script src="../black-rose-eval/script.js"></script>
     <script src="./supabase-config.js"></script>
     <script src="./app.js"></script>
     <!-- Theme toggle logic -->
