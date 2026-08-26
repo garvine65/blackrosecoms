@@ -989,7 +989,7 @@ function render() {
   const isPasswords = activeView === "passwords";
   const isEvaluations = activeView === "evaluations";
 
-  clientTabs.style.display = isTask ? "" : "none";
+  clientTabs.style.display = "none";
   tasksHeading.style.display = isTask ? "" : "none";
   taskBoard.style.display = isTask ? "" : "none";
   newTaskButton.style.display = isTask ? "" : "none";
@@ -2314,8 +2314,8 @@ function renderDashboard() {
     const nextTask = [...open].sort((a, b) => new Date(a.due) - new Date(b.due))[0];
     const urgentCount = open.filter(t => t.priority === "urgent").length;
     const statusCls = overdue.length ? "dash-overdue" : dueToday.length ? "dash-today" : "dash-ok";
-    return `<div class="dashboard-card ${statusCls}">
-      <div class="dash-client-name">${client}</div>
+    return `<div class="dashboard-card ${statusCls}" data-client-name="${escapeHtml(client)}" style="cursor: pointer;">
+      <div class="dash-client-name">${escapeHtml(client)}</div>
       <div class="dash-stats">
         <div class="dash-stat"><span class="dash-num ${overdue.length ? "stat-red" : ""}">${overdue.length}</span><span>Overdue</span></div>
         <div class="dash-stat"><span class="dash-num ${dueToday.length ? "stat-amber" : ""}">${dueToday.length}</span><span>Today</span></div>
@@ -2327,6 +2327,17 @@ function renderDashboard() {
     </div>`;
   }).join("");
 }
+
+// Click listener for client cards on Client Dashboard
+document.querySelector("#dashboardGrid")?.addEventListener("click", (e) => {
+  const card = e.target.closest(".dashboard-card");
+  if (card && card.dataset.clientName) {
+    selectedClient = card.dataset.clientName;
+    activeView = "tasks";
+    closeMobileSidebar();
+    render();
+  }
+});
 
 // ── Feature 7: Workload View ──────────────────────────────────────────────────
 function renderWorkload() {
