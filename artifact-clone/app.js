@@ -1589,55 +1589,60 @@ function showMandatoryWhatsAppCompletionModal(task, onConfirmedComplete) {
       background: var(--bg-dialog, #fffdf9); color: var(--ink, #14233b);
       border: 1px solid var(--border-surface, rgba(201,149,42,0.3));
       border-radius: 18px; padding: 24px;
-      max-width: 440px; width: 100%;
+      max-width: 460px; width: 100%;
       box-shadow: 0 24px 70px rgba(0,0,0,0.45);
       font-family: inherit;
     ">
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px; border-bottom:1.5px solid var(--line, #e4ded3); padding-bottom:12px;">
         <span style="font-size: 28px;">✅</span>
         <div>
-          <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary, #14233b);">Task Completion Notification Required</h3>
-          <p style="margin: 2px 0 0; font-size: 0.8rem; color: var(--muted, #897f73);">Mandatory WhatsApp alert to task assigner</p>
+          <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary, #14233b);">Task Completion Notification</h3>
+          <p style="margin: 2px 0 0; font-size: 0.8rem; color: var(--muted, #897f73);">Notify Team WhatsApp Group or Assigner</p>
         </div>
       </div>
 
-      <p style="font-size: 0.9rem; line-height: 1.5; margin: 0 0 14px;">
-        To mark <strong>"${escapeHtml(task.title)}"</strong> as completed, you must notify the assigner (<strong>${escapeHtml(assigner ? assigner.name : "Assigner")}</strong>) via WhatsApp so they know it is done.
+      <p style="font-size: 0.88rem; line-height: 1.5; margin: 0 0 14px;">
+        Task <strong>"${escapeHtml(task.title)}"</strong> completed! Choose where to post the WhatsApp notification below:
       </p>
 
       <div style="margin-bottom: 14px;">
         <label style="display:block; font-size: 0.82rem; font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">
-          ${escapeHtml(assigner ? assigner.name : "Assigner")}'s WhatsApp Phone Number
+          Assigner DM Number (Optional for DM):
         </label>
         <input type="tel" id="wa-assigner-phone" value="${escapeHtml(phoneNum)}" placeholder="+254712345678" style="
-          width: 100%; padding: 10px 12px; border-radius: 8px;
+          width: 100%; padding: 9px 12px; border-radius: 8px;
           border: 1px solid var(--border-input, #ccc);
           background: var(--bg-input, #fff); color: var(--ink, #14233b);
-          font-size: 0.95rem; box-sizing: border-box;
+          font-size: 0.9rem; box-sizing: border-box;
         " />
-        <p id="wa-phone-err" style="color:var(--red, #b33a3a); font-size:0.8rem; margin:4px 0 0; display:none;">Please enter a valid phone number for ${escapeHtml(assigner ? assigner.name : "Assigner")}.</p>
       </div>
 
       <div style="
         background: var(--paper, #f8f6f0); border: 1px dashed var(--line, #ddd);
         border-radius: 10px; padding: 12px; font-size: 0.82rem; line-height: 1.55;
-        margin-bottom: 20px; color: var(--ink, #333); font-family: monospace; max-height: 110px; overflow-y: auto;
+        margin-bottom: 18px; color: var(--ink, #333); font-family: monospace; max-height: 110px; overflow-y: auto;
       ">
         <strong>Message Preview:</strong><br/>
         ✅ *Task Completed! — Black Rose Tracker*<br/>
-        Hi *${escapeHtml(assigner ? assigner.name : "Assigner")}*,<br/>
-        I have completed the task:<br/>
         📋 *Task:* ${escapeHtml(task.title)}<br/>
         🏢 *Client:* ${escapeHtml(task.client)}<br/>
         📅 *Due:* ${formatDue(task.due)}<br/>
-        👤 *Completed by:* ${escapeHtml(completer ? completer.name : "Assignee")}
+        👤 *Completed by:* ${escapeHtml(completer ? completer.name : "Assignee")}<br/>
+        👤 *Assigned by:* ${escapeHtml(assigner ? assigner.name : "Assigner")}
       </div>
 
-      <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button id="wa-cancel-complete-btn" class="outline-button compact-button" style="padding: 9px 16px;">Cancel (Keep Open)</button>
-        <button id="wa-send-complete-btn" class="primary-button compact-button" style="background:#25D366; border-color:#25D366; color:#fff; font-weight:700; padding: 9px 18px; display:flex; align-items:center; gap:6px;">
-          Send &amp; Complete Task 💬
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button id="wa-send-group-btn" class="primary-button compact-button" style="background:#25D366; border-color:#25D366; color:#fff; font-weight:700; padding: 11px 16px; display:flex; align-items:center; justify-content:center; gap:8px; border-radius:10px; font-size:0.9rem;">
+          💬 Post to Team WhatsApp Group
         </button>
+        <div style="display: flex; gap: 8px; margin-top:2px;">
+          <button id="wa-send-dm-btn" class="outline-button compact-button" style="flex:1; padding: 9px 12px; font-size:0.82rem;">
+            👤 Send DM to ${escapeHtml(assigner ? assigner.name.split(' ')[0] : 'Assigner')}
+          </button>
+          <button id="wa-cancel-complete-btn" class="outline-button compact-button" style="padding: 9px 14px; font-size:0.82rem;">
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -1645,22 +1650,37 @@ function showMandatoryWhatsAppCompletionModal(task, onConfirmedComplete) {
   document.body.appendChild(overlay);
 
   const phoneInput = overlay.querySelector("#wa-assigner-phone");
-  const phoneErr = overlay.querySelector("#wa-phone-err");
   const cancelBtn = overlay.querySelector("#wa-cancel-complete-btn");
-  const sendBtn = overlay.querySelector("#wa-send-complete-btn");
+  const groupBtn = overlay.querySelector("#wa-send-group-btn");
+  const dmBtn = overlay.querySelector("#wa-send-dm-btn");
+
+  const buildMessage = () => {
+    return `✅ *Task Completed! — Black Rose Tracker*\n\n` +
+      `📋 *Task:* ${task.title}\n` +
+      `🏢 *Client:* ${task.client}\n` +
+      `📅 *Due:* ${formatDue(task.due)}\n` +
+      (task.details ? `📝 *Details:* ${task.details}\n` : "") +
+      `👤 *Completed by:* ${completer ? completer.name : "Assignee"}\n` +
+      `👤 *Assigned by:* ${assigner ? assigner.name : "Assigner"}\n\n` +
+      `🔗 Tracker: ${window.location.origin}/`;
+  };
 
   cancelBtn.addEventListener("click", () => {
     overlay.remove();
   });
 
-  sendBtn.addEventListener("click", async () => {
-    let rawPhone = phoneInput.value.trim().replace(/[\s\-()]/g, "");
-    if (!rawPhone) {
-      phoneErr.style.display = "block";
-      return;
-    }
-    phoneErr.style.display = "none";
+  // Action 1: Post to WhatsApp Group (opens WhatsApp pre-filled, user picks Team Group)
+  groupBtn.addEventListener("click", () => {
+    const msg = buildMessage();
+    const waGroupUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.open(waGroupUrl, "_blank");
+    overlay.remove();
+    onConfirmedComplete();
+  });
 
+  // Action 2: Send DM to Assigner
+  dmBtn.addEventListener("click", () => {
+    let rawPhone = phoneInput.value.trim().replace(/[\s\-()]/g, "");
     let cleanPhone = rawPhone;
     if (!cleanPhone.startsWith("+") && cleanPhone.length === 9) cleanPhone = `+254${cleanPhone}`;
     else if (!cleanPhone.startsWith("+") && cleanPhone.startsWith("0")) cleanPhone = `+254${cleanPhone.substring(1)}`;
@@ -1672,22 +1692,13 @@ function showMandatoryWhatsAppCompletionModal(task, onConfirmedComplete) {
       supabase.from("profiles").update({ phone: rawPhone }).eq("id", assigner.id).catch(console.error);
     }
 
-    const message =
-      `✅ *Task Completed! — Black Rose Tracker*\n\n` +
-      `Hi *${assigner ? assigner.name : "Assigner"}*,\n` +
-      `The task assigned has been completed:\n\n` +
-      `📋 *Task:* ${task.title}\n` +
-      `🏢 *Client:* ${task.client}\n` +
-      `📅 *Due:* ${formatDue(task.due)}\n` +
-      (task.details ? `📝 *Details:* ${task.details}\n` : "") +
-      `👤 *Completed by:* ${completer ? completer.name : "Assignee"}\n\n` +
-      `🔗 Open tracker: ${window.location.origin}/`;
+    const msg = buildMessage();
+    const waDmUrl = cleanPhone
+      ? `https://wa.me/${cleanPhone.replace("+", "")}?text=${encodeURIComponent(msg)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
 
-    const waUrl = `https://wa.me/${cleanPhone.replace("+", "")}?text=${encodeURIComponent(message)}`;
-
-    window.open(waUrl, "_blank");
+    window.open(waDmUrl, "_blank");
     overlay.remove();
-
     onConfirmedComplete();
   });
 }
