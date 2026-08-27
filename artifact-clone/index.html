@@ -296,8 +296,11 @@
 
         <div id="dashboardView" hidden>
           <section class="view-heading">
-            <h2>Client Dashboard</h2>
-            <span id="dashboardSubtitle"></span>
+            <div>
+              <h2>Client Dashboard</h2>
+              <span id="dashboardSubtitle" style="color:var(--muted); font-size:0.88rem;"></span>
+            </div>
+            <button class="primary-button compact-button" id="newClientBtn">+ Add Client</button>
           </section>
           <div id="dashboardGrid" class="dashboard-grid"></div>
 
@@ -476,6 +479,7 @@
                     <small style="display:flex;align-items:center;gap:4px;"><span class="chat-online-dot"></span>Active • Internal Channel</small>
                   </div>
                 </div>
+                <button class="outline-button compact-button" id="clearChatBtn" style="font-size:0.78rem; padding:0.35rem 0.75rem;">Clear Chat</button>
               </div>
 
               <div class="chat-messages" id="chatMessages"></div>
@@ -758,9 +762,18 @@
             Time
             <input id="meetingTime" type="time" required />
           </label>
-          <label style="grid-column: span 2;">
+          <label>
             Organizer
             <select id="meetingOrganizer" required></select>
+          </label>
+          <label>
+            Repeat / Recurrence
+            <select id="meetingRepeat">
+              <option value="">Does not repeat</option>
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Bi-weekly (Every 2 weeks)</option>
+              <option value="monthly">Monthly</option>
+            </select>
           </label>
         </div>
 
@@ -1033,5 +1046,20 @@
         }
       })();
     </script>
+    <!-- ── NEW CLIENT MODAL ────────────────────────────────────── -->
+    <div id="newClientModal" class="cl-new-modal-overlay" hidden>
+      <div class="cl-new-modal" style="max-width: 420px;">
+        <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--primary);">Add New Client</h3>
+        <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1.2rem;">Register a new client company to track tasks, passwords, and compliance checklists across Black Rose.</p>
+        <div style="margin-bottom: 1.2rem;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.04em;">Client Company Name</label>
+          <input type="text" id="newClientNameInput" placeholder="e.g. Acme Financial Ltd" style="width: 100%; padding: 0.6rem 0.85rem; border-radius: 8px; border: 1px solid var(--border-input); background: var(--bg-input); color: var(--ink); font-size: 0.95rem; box-sizing: border-box;" />
+        </div>
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem;">
+          <button class="outline-button compact-button" id="closeClientModalBtn" type="button">Cancel</button>
+          <button class="primary-button compact-button" id="saveClientBtn" type="button">Save Client</button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

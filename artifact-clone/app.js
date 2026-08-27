@@ -10,7 +10,30 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ═══════════════════════════════════════════════════════════════════
 //  CONSTANTS & DEFAULTS
 // ═══════════════════════════════════════════════════════════════════
-const clients = ["All clients", "AMM Law", "BRC Consultancy", "Briq Consultancy", "Multiplier", "Ultimate", "ADH"];
+const clientStorageKey = "blackrose-client-list";
+const defaultClients = ["All clients", "AMM Law", "BRC Consultancy", "Briq Consultancy", "Multiplier", "Ultimate", "ADH"];
+
+function loadClientsLocally() {
+  try {
+    const saved = localStorage.getItem(clientStorageKey);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return ["All clients", ...parsed.filter(c => c !== "All clients")];
+      }
+    }
+  } catch (e) { console.error(e); }
+  return [...defaultClients];
+}
+
+function persistClientsLocally() {
+  try {
+    const list = clients.filter(c => c !== "All clients");
+    localStorage.setItem(clientStorageKey, JSON.stringify(list));
+  } catch (e) { console.error(e); }
+}
+
+let clients = loadClientsLocally();
 let today = new Date();
 let timeOffset = 0;
 const storageKey = "gregu-client-tasks";
@@ -35,8 +58,8 @@ let searchQuery = "";
 
 const passwordStorageKey = "blackrose-client-passwords";
 const defaultPasswords = [
-  { id: "pass-1", category: "kra", client: "AMM Law", username: "P051234567X", password: "Password123" },
-  { id: "pass-2", category: "gmail", client: "BRC Consultancy", username: "info@blackrose.co.ke", password: "SecretPassword" }
+  { id: "pass-1", category: "kra", client: "AMM Law", username: "P051234567X", password: "Password123", item: "", link: "" },
+  { id: "pass-2", category: "gmail", client: "BRC Consultancy", username: "info@blackrose.co.ke", password: "SecretPassword", item: "Drive", link: "https://drive.google.com" }
 ];
 
 let passwords = loadPasswords();
@@ -685,7 +708,8 @@ async function loadMeetingsFromDB() {
       time: m.time.substring(0,5),
       link: m.link || "",
       organizer: m.organizer_id,
-      participants: m.participants || []
+      participants: m.participants || [],
+      repeat: m.repeat || ""
     }));
   }
 }
@@ -1652,7 +1676,7 @@ function showMandatoryWhatsAppCompletionModal(task, onConfirmedComplete) {
             👤 Send DM to ${escapeHtml(assigner ? assigner.name.split(' ')[0] : 'Assigner')}
           </button>
           <button id="wa-cancel-complete-btn" class="outline-button compact-button" style="padding: 9px 14px; font-size:0.82rem;">
-            Cancel
+            Skip notification
           </button>
         </div>
       </div>
@@ -1679,6 +1703,7 @@ function showMandatoryWhatsAppCompletionModal(task, onConfirmedComplete) {
 
   cancelBtn.addEventListener("click", () => {
     overlay.remove();
+    onConfirmedComplete(); // Still mark task complete — user just chose to skip the notification
   });
 
   // Action 1: Post to WhatsApp Group (opens WhatsApp pre-filled, user picks Team Group)
@@ -1842,6 +1867,49 @@ function persistProfiles() {
   localStorage.setItem(profileStorageKey, JSON.stringify(profiles));
 }
 
+async function loadClientsFromDB() {
+  try {
+    const { data, error } = await supabase.from("clients").select("name");
+    if (!error && data && data.length > 0) {
+      const dbNames = data.map(c => c.name).filter(Boolean);
+      const combined = Array.from(new Set([...defaultClients.filter(c => c !== "All clients"), ...dbNames])).sort();
+      clients.length = 0;
+      clients.push("All clients", ...combined);
+      persistClientsLocally();
+      populateTaskFormOptions();
+      populateDatalist();
+    }
+  } catch (err) {
+    console.warn("Could not load clients from Supabase:", err);
+  }
+}
+
+async function addNewClient(clientName) {
+  const cleanName = clientName.trim();
+  if (!cleanName) return;
+
+  if (clients.some(c => c.toLowerCase() === cleanName.toLowerCase())) {
+    showToast(`Client "${cleanName}" already exists!`);
+    return;
+  }
+
+  clients.push(cleanName);
+  clients.sort((a, b) => a === "All clients" ? -1 : b === "All clients" ? 1 : a.localeCompare(b));
+  persistClientsLocally();
+
+  try {
+    const { error } = await supabase.from("clients").insert([{ name: cleanName }]);
+    if (error) console.warn("Supabase client insert error:", error);
+  } catch (e) {
+    console.error("Supabase client insert exception:", e);
+  }
+
+  populateTaskFormOptions();
+  populateDatalist();
+  showToast(`Client "${cleanName}" registered successfully!`);
+  render();
+}
+
 async function loadTasksFromDB() {
   const { data, error } = await supabase.from("tasks").select("*, comments:task_comments(*)");
   if (!error && data) {
@@ -1999,11 +2067,14 @@ function renderMeetings() {
 
 function renderMeetingCard(meeting) {
   const organizer = getProfile(meeting.organizer);
+  const repeatLabel = meeting.repeat === "weekly" ? "🔁 Weekly" : meeting.repeat === "biweekly" ? "🔁 Bi-weekly" : meeting.repeat === "monthly" ? "🔁 Monthly" : "";
+
   return `<article class="meeting-card">
     <div class="meeting-card-header">
       <div class="meeting-card-organizer">
         ${organizer.image ? `<img src="${organizer.image}" alt="${escapeHtml(organizer.name)}" />` : `<span class="profile-placeholder" style="width:2rem;height:2rem;font-size:0.8rem;">+</span>`}
         <span class="org-name">by ${escapeHtml(organizer.name)}</span>
+        ${repeatLabel ? `<span style="margin-left:auto; font-size:0.72rem; padding:0.18rem 0.55rem; border-radius:12px; background:rgba(212,175,55,0.15); color:#d4af37; font-weight:700; border:1px solid rgba(212,175,55,0.3);">${repeatLabel}</span>` : ""}
       </div>
       <h3>${escapeHtml(meeting.title)}</h3>
     </div>
@@ -2065,6 +2136,7 @@ function openMeetingDialog(meeting) {
   document.querySelector("#meetingOrganizer").innerHTML = profileOptions(organizerId);
   document.querySelector("#meetingDate").value = meeting?.date ?? "2026-07-10";
   document.querySelector("#meetingTime").value = meeting?.time ?? "10:00";
+  document.querySelector("#meetingRepeat").value = meeting?.repeat ?? "";
   
   const participantsContainer = document.querySelector("#meetingParticipants");
   const selectedParticipants = meeting?.participants ?? profiles.map(p => p.id);
@@ -2102,6 +2174,7 @@ async function saveMeeting(event) {
     organizer: document.querySelector("#meetingOrganizer").value,
     date: document.querySelector("#meetingDate").value,
     time: document.querySelector("#meetingTime").value,
+    repeat: document.querySelector("#meetingRepeat").value,
     participants
   };
 
@@ -2121,7 +2194,8 @@ async function saveMeeting(event) {
     time: nextMeeting.time,
     link: nextMeeting.link,
     organizer_id: nextMeeting.organizer,
-    participants: nextMeeting.participants
+    participants: nextMeeting.participants,
+    repeat: nextMeeting.repeat
   };
 
   if (existingMeeting) {
@@ -2204,10 +2278,11 @@ function skipRecurrence() {
   const task = tasks.find((t) => t.id === id);
   if (!task) return;
 
-  showMandatoryWhatsAppCompletionModal(task, () => {
-    updateTask(id, { status: "completed" });
-    recurrenceDialog.close();
-  });
+  // "Skip scheduling" = mark complete without scheduling the next recurrence.
+  // No need for the WhatsApp modal here — just complete the task and close.
+  updateTask(id, { status: "completed" });
+  recurrenceDialog.close();
+  render();
 }
 
 function getCountdownLabel(dueStr) {
@@ -2327,7 +2402,7 @@ function renderDashboard() {
   const allToday = allOpen.filter(t => classifyTask(t) === "today");
 
   document.querySelector("#dashboardSubtitle").textContent =
-    `${allOpen.length} open · ${allOverdue.length} overdue · ${allToday.length} due today`;
+    `${clientList.length} registered clients · ${allOpen.length} open · ${allOverdue.length} overdue · ${allToday.length} due today`;
 
   const grid = document.querySelector("#dashboardGrid");
   grid.innerHTML = clientList.map(client => {
@@ -2539,15 +2614,21 @@ const UNWIND_QUOTES = [
 
 const REACTION_EMOJIS = ["👍","❤️","😂","😮","😢","🔥","💀","🥲"];
 
-// Seed messages to populate the chat on first load
-const SEED_MESSAGES = [
-  { id: "seed-1", authorId: "diane-marie", type: "text", content: "Guys this UNWIND tab was literally the best idea 😂 finally somewhere we can just vibe", timestamp: "10 Jul · 08:14", reactions: {} },
-  { id: "seed-2", authorId: "greg", type: "text", content: "Finally!! I've been dying to send memes in this app 💀", timestamp: "10 Jul · 08:16", reactions: { "😂": ["mercy", "wangui-muchiri"] } },
-  { id: "seed-3", authorId: "shadrack", type: "sticker", content: "🎉", timestamp: "10 Jul · 08:17", reactions: {} },
-  { id: "seed-4", authorId: "mercy", type: "text", content: "okay but who's the goon this week 👀 don't be shy", timestamp: "10 Jul · 08:19", reactions: { "😂": ["diane-marie", "greg", "carol-nduta"], "🔥": ["shadrack"] } },
-  { id: "seed-5", authorId: "wangui-muchiri", type: "text", content: "The rankings don't lie 😭😭 I'm just gonna go cry in VAT reconciliations", timestamp: "10 Jul · 08:21", reactions: { "💀": ["greg", "mercy"] } },
-  { id: "seed-6", authorId: "carol-nduta", type: "text", content: "LMAOO wangui 💀 but fr tho this is so fun. okay back to work 😤", timestamp: "10 Jul · 08:23", reactions: { "❤️": ["diane-marie"] } },
-];
+// Start clean without pre-populated seed messages
+const SEED_MESSAGES = [];
+
+async function clearChatMessages() {
+  if (!confirm("Are you sure you want to clear all team channel chat messages and start fresh?")) return;
+  unwindMessages = [];
+  try {
+    localStorage.removeItem(UNWIND_STORAGE_KEY);
+    await supabase.from("chat_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  } catch (e) {
+    console.error("Error clearing chat messages:", e);
+  }
+  renderChatMessages();
+  showToast("Chat messages cleared!");
+}
 
 let _unwindInitialized = false;
 
@@ -2650,12 +2731,31 @@ function renderLeaderboards() {
   const showoffsEl = document.querySelector("#showoffsList");
   if (!goonsEl || !showoffsEl) return;
 
-  const ranked = computeRankings();
-  const goons = ranked.slice(0, 3);
-  const showoffs = ranked.slice(3).reverse();
+  const allRanked = computeRankings();
 
-  goonsEl.innerHTML = goons.map((e, i) => renderRankCard(e, i, true, false)).join("");
-  showoffsEl.innerHTML = showoffs.map((e, i) => renderRankCard(e, i, false, i === 0)).join("");
+  // "Needs Attention": Only include users who actually have overdue or open tasks pending
+  const goons = allRanked
+    .filter(entry => entry.overdueCount > 0 || entry.urgentOpen > 0 || entry.openCount > 0)
+    .sort((a, b) => (b.overdueCount * 3 + b.urgentOpen * 2 + b.openCount) - (a.overdueCount * 3 + a.urgentOpen * 2 + a.openCount))
+    .slice(0, 5);
+
+  // "Top Performers": Ranked by completed tasks output
+  const showoffs = [...allRanked]
+    .sort((a, b) => b.completedCount - a.completedCount)
+    .filter(entry => entry.completedCount > 0 || entry.openCount > 0)
+    .slice(0, 5);
+
+  if (goons.length === 0) {
+    goonsEl.innerHTML = `<div style="padding:1rem; text-align:center; color:var(--success, #10b981); font-size:0.88rem; font-weight:600;">✅ All clear! No overdue tasks or pending backlog.</div>`;
+  } else {
+    goonsEl.innerHTML = goons.map((e, i) => renderRankCard(e, i, true, false)).join("");
+  }
+
+  if (showoffs.length === 0) {
+    showoffsEl.innerHTML = `<div style="padding:1rem; text-align:center; color:var(--muted); font-size:0.85rem;">No task completions recorded yet.</div>`;
+  } else {
+    showoffsEl.innerHTML = showoffs.map((e, i) => renderRankCard(e, i, false, i === 0)).join("");
+  }
 }
 
 // ── Chat rendering ───────────────────────────────────────────
@@ -2928,6 +3028,12 @@ function renderUnwind() {
     }
   });
 
+  // Clear Chat button
+  const clearBtn = document.querySelector("#clearChatBtn");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", clearChatMessages);
+  }
+
   // Vibe buttons
   document.querySelectorAll(".vibe-btn").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -3022,7 +3128,9 @@ async function addPasswordRow() {
     category: activePasswordCategory === "all" ? "kra" : activePasswordCategory,
     client: "",
     username: "",
-    password: ""
+    password: "",
+    item: "",
+    link: ""
   };
   passwords.push(newRow);
   persistPasswords();
@@ -3033,7 +3141,9 @@ async function addPasswordRow() {
     category: newRow.category,
     client: newRow.client,
     username: newRow.username,
-    password: newRow.password
+    password: newRow.password,
+    item: newRow.item,
+    link: newRow.link
   }]);
 }
 
@@ -3082,10 +3192,19 @@ function renderPasswords() {
       <th style="width: 25%;">Password</th>
       <th style="width: 5%;"></th>
     `;
+  } else if (activePasswordCategory === "gmail") {
+    headerRow.innerHTML = `
+      <th style="width: 20%;">Client</th>
+      <th style="width: 22%;">Gmail</th>
+      <th style="width: 16%;">Item</th>
+      <th style="width: 22%;">Link</th>
+      <th style="width: 15%;">Password</th>
+      <th style="width: 5%;"></th>
+    `;
   } else {
     headerRow.innerHTML = `
       <th style="width: 35%;">Client</th>
-      <th style="width: 35%;">Gmail Address</th>
+      <th style="width: 35%;">Username / Email</th>
       <th style="width: 25%;">Password</th>
       <th style="width: 5%;"></th>
     `;
@@ -3093,6 +3212,9 @@ function renderPasswords() {
 
   container.innerHTML = filtered.map(item => {
     const cat = item.category || "kra";
+    const linkVal = item.link || "";
+    const linkHref = linkVal && (linkVal.startsWith("http") ? linkVal : `https://${linkVal}`);
+
     if (isAll) {
       return `
         <tr data-id="${item.id}">
@@ -3121,13 +3243,45 @@ function renderPasswords() {
         </tr>
       `;
     }
+
+    if (activePasswordCategory === "gmail") {
+      return `
+        <tr data-id="${item.id}">
+          <td>
+            <input list="clientDatalist" data-field="client" value="${escapeHtml(item.client)}" placeholder="Client name" />
+          </td>
+          <td>
+            <input type="text" data-field="username" value="${escapeHtml(item.username)}" placeholder="e.g. client@gmail.com" />
+          </td>
+          <td>
+            <input type="text" data-field="item" value="${escapeHtml(item.item || "")}" placeholder="e.g. Drive, Sheets…" />
+          </td>
+          <td class="pwd-link-cell">
+            <div class="pwd-link-wrapper">
+              <input type="url" data-field="link" value="${escapeHtml(linkVal)}" placeholder="https://…" class="pwd-link-input" />
+              ${linkVal ? `<a href="${escapeHtml(linkHref)}" target="_blank" rel="noopener noreferrer" class="pwd-link-btn" title="Open link"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : ""}
+            </div>
+          </td>
+          <td>
+            <div class="password-input-wrapper">
+              <input type="password" data-field="password" value="${escapeHtml(item.password)}" placeholder="Password" />
+              <button type="button" class="password-toggle-btn" title="Toggle visibility">👁</button>
+            </div>
+          </td>
+          <td style="text-align: right;">
+            <button type="button" class="row-delete-btn" title="Delete credential">✕</button>
+          </td>
+        </tr>
+      `;
+    }
+
     return `
       <tr data-id="${item.id}">
         <td>
           <input list="clientDatalist" data-field="client" value="${escapeHtml(item.client)}" placeholder="Client name" />
         </td>
         <td>
-          <input type="text" data-field="username" value="${escapeHtml(item.username)}" placeholder="${activePasswordCategory === 'kra' ? 'e.g. P851234567X' : 'e.g. client@gmail.com'}" />
+          <input type="text" data-field="username" value="${escapeHtml(item.username)}" placeholder="e.g. P851234567X" />
         </td>
         <td>
           <div class="password-input-wrapper">
@@ -5456,12 +5610,50 @@ document.getElementById("clDeleteChecklistBtn").addEventListener("click", () => 
   renderChecklists();
 });
 
-// ── Load checklists on startup ────────────────────────────────────
+// ── Add Client Modal Event Handlers ──────────────────────────────
+const newClientModal = document.getElementById("newClientModal");
+const newClientBtn = document.getElementById("newClientBtn");
+const closeClientModalBtn = document.getElementById("closeClientModalBtn");
+const saveClientBtn = document.getElementById("saveClientBtn");
+const newClientNameInput = document.getElementById("newClientNameInput");
+
+if (newClientBtn && newClientModal) {
+  newClientBtn.addEventListener("click", () => {
+    newClientNameInput.value = "";
+    newClientModal.hidden = false;
+    newClientNameInput.focus();
+  });
+}
+
+if (closeClientModalBtn && newClientModal) {
+  closeClientModalBtn.addEventListener("click", () => {
+    newClientModal.hidden = true;
+  });
+}
+
+if (saveClientBtn) {
+  saveClientBtn.addEventListener("click", async () => {
+    const val = newClientNameInput.value.trim();
+    if (!val) {
+      alert("Please enter a client company name.");
+      return;
+    }
+    await addNewClient(val);
+    newClientModal.hidden = true;
+  });
+}
+
+if (newClientModal) {
+  newClientModal.addEventListener("click", e => {
+    if (e.target === newClientModal) newClientModal.hidden = true;
+  });
+}
+
+// ── Startup Data Fetching ─────────────────────────────────────────
 monthlyChecklists = loadChecklists();
+loadClientsFromDB();
 
 // ── Expose active profile to evaluation script ────────────────────
-// script.js (eval) runs outside this IIFE so it reads activeProfileId
-// via this window helper instead of duplicating the session logic.
 window.getActiveProfile = function () {
   if (!activeProfileId) return null;
   return profiles.find(p => p.id === activeProfileId) || null;

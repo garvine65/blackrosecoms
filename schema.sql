@@ -91,6 +91,7 @@ create table public.meetings (
   link text,
   organizer_id text references public.profiles(id),
   participants jsonb default '[]'::jsonb,
+  repeat text,
   created_at timestamptz default now()
 );
 
@@ -104,6 +105,8 @@ create table public.passwords (
   client text not null,
   username text not null,
   password text not null, -- Encrypted text
+  item text,
+  link text,
   created_at timestamptz default now()
 );
 
