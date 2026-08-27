@@ -5462,5 +5462,13 @@ document.getElementById("clDeleteChecklistBtn").addEventListener("click", () => 
 // ── Load checklists on startup ────────────────────────────────────
 monthlyChecklists = loadChecklists();
 
+// ── Expose active profile to evaluation script ────────────────────
+// script.js (eval) runs outside this IIFE so it reads activeProfileId
+// via this window helper instead of duplicating the session logic.
+window.getActiveProfile = function () {
+  if (!activeProfileId) return null;
+  return profiles.find(p => p.id === activeProfileId) || null;
+};
+
 })(); // end IIFE
 

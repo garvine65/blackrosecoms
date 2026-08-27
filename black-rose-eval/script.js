@@ -202,32 +202,33 @@ function saveDraftLocally() {
 function ensureActiveDirector() {
   if (currentDirector) return currentDirector;
 
+  // Primary: read logged-in profile from the main app (window.getActiveProfile is
+  // exposed by app.js after its IIFE runs)
   try {
-    let pId = "";
-    if (typeof activeProfileId !== "undefined" && activeProfileId) {
-      pId = activeProfileId;
-    } else {
-      pId = sessionStorage.getItem('blackrose-active-profile') || 
-            localStorage.getItem('blackrose-active-profile') || '';
-    }
-    if (pId) {
-      const found = DIRECTORS.find(d => d.id === pId);
-      if (found) {
-        currentDirector = found;
-        return found;
+    if (typeof window.getActiveProfile === 'function') {
+      const ap = window.getActiveProfile();
+      if (ap) {
+        const found = DIRECTORS.find(d => d.id === ap.id);
+        if (found) {
+          currentDirector = found;
+          return found;
+        }
+        // Profile exists in app but not in DIRECTORS — add it on the fly
+        const dynamic = { id: ap.id, name: ap.name, role: 'Director' };
+        currentDirector = dynamic;
+        return dynamic;
       }
     }
   } catch (e) {}
 
-  const evName = document.getElementById('evaluatorName');
-  const nameText = evName ? evName.textContent.trim() : '';
-  if (nameText) {
-    const found = DIRECTORS.find(d => d.name.toLowerCase() === nameText.toLowerCase());
-    if (found) {
-      currentDirector = found;
-      return found;
+  // Fallback: check localStorage session key (used by standalone page)
+  try {
+    const pId = localStorage.getItem('blackrose-active-profile') || '';
+    if (pId) {
+      const found = DIRECTORS.find(d => d.id === pId);
+      if (found) { currentDirector = found; return found; }
     }
-  }
+  } catch (e) {}
 
   return null;
 }
@@ -779,22 +780,33 @@ generatePDFBlobAndSave = async function(filename) {
   return _origGeneratePDF(filename);
 };
 
-// Initialize on page load — auto-select the logged-in director
+// Initialize — auto-select the logged-in director when the Evaluations tab opens.
+// Called by app.js every time the tab is navigated to (inside render()).
+// If a director is already active and the form is showing, do not reset the form.
 function initEvaluation() {
   buildDirectorGrid();
+
+  const formWrap = document.getElementById('formWrap');
+  const formIsActive = formWrap && formWrap.classList.contains('active');
+
+  // If form already open (director selected), just refresh the grid marks — don't reset
+  if (formIsActive && currentDirector) return;
+
+  // Try to auto-select the logged-in user
   const dir = ensureActiveDirector();
   if (dir) {
     selectDirector(dir, false);
   } else {
     const gate = document.getElementById('gate');
     if (gate) gate.style.display = 'block';
-    const formWrap = document.getElementById('formWrap');
     if (formWrap) formWrap.classList.remove('active');
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initEvaluation);
-} else {
+// initEvaluation() is called by app.js whenever the Evaluations tab is opened.
+// Do NOT auto-run it here — it runs inside the integrated app after login.
+// (Kept for backwards-compat if the file is ever loaded standalone.)
+if (document.readyState !== 'loading' && !document.getElementById('appSidebar')) {
+  // Only auto-init when loaded as a standalone page (no main app sidebar present)
   initEvaluation();
 }
