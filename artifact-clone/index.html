@@ -527,7 +527,12 @@
             <!-- STEP 1: choose evaluator gate -->
             <div id="gate" class="gate">
               <p class="lead">Select your name to begin the evaluation.</p>
-              <div class="director-grid" id="directorGrid"></div>
+              <div class="director-grid" id="directorGrid">
+                <button class="director-btn" data-director-id="wangui-muchiri" onclick="(function(btn){var d={id:'wangui-muchiri',name:'Wangui Muchiri',role:'Director'};if(typeof selectDirector==='function')selectDirector(d,false);})(this)">Wangui Muchiri<span class="role-tag">Director</span></button>
+                <button class="director-btn" data-director-id="mercy" onclick="(function(btn){var d={id:'mercy',name:'Mercy Waweru',role:'Director'};if(typeof selectDirector==='function')selectDirector(d,false);})(this)">Mercy Waweru<span class="role-tag">Director</span></button>
+                <button class="director-btn" data-director-id="diane-marie" onclick="(function(btn){var d={id:'diane-marie',name:'Diane Meria',role:'Director'};if(typeof selectDirector==='function')selectDirector(d,false);})(this)">Diane Meria<span class="role-tag">Director</span></button>
+                <button class="director-btn" data-director-id="greg" onclick="(function(btn){var d={id:'greg',name:'Gregory Nyataige',role:'Director'};if(typeof selectDirector==='function')selectDirector(d,false);})(this)">Gregory Nyataige<span class="role-tag">Director</span></button>
+              </div>
             </div>
 
             <!-- STEP 2: form -->

@@ -120,14 +120,31 @@ function buildMetrics() {
 function buildDirectorGrid() {
   const directorGrid = document.getElementById('directorGrid');
   if (!directorGrid) return;
-  directorGrid.innerHTML = '';
-  DIRECTORS.forEach(d => {
-    const btn = document.createElement('button');
-    btn.className = 'director-btn';
-    btn.innerHTML = `${d.name}<span class="role-tag">${d.role}</span>`;
-    btn.addEventListener('click', () => selectDirector(d));
-    directorGrid.appendChild(btn);
-  });
+
+  // Only build dynamically if there are no buttons already (e.g. standalone page)
+  const existing = directorGrid.querySelectorAll('.director-btn');
+  if (existing.length === 0) {
+    // Dynamically populate (standalone page or missing hardcoded buttons)
+    DIRECTORS.forEach(d => {
+      const btn = document.createElement('button');
+      btn.className = 'director-btn';
+      btn.dataset.directorId = d.id;
+      btn.innerHTML = `${d.name}<span class="role-tag">${d.role}</span>`;
+      btn.addEventListener('click', () => selectDirector(d));
+      directorGrid.appendChild(btn);
+    });
+  } else {
+    // Buttons already in DOM — wire up click events if not already wired
+    existing.forEach(btn => {
+      const id = btn.dataset.directorId;
+      if (id && !btn.dataset.wired) {
+        const d = DIRECTORS.find(x => x.id === id) || { id, name: btn.textContent.trim().replace(/DIRECTOR/i, '').trim(), role: 'Director' };
+        btn.addEventListener('click', () => selectDirector(d));
+        btn.dataset.wired = '1';
+      }
+    });
+  }
+
   markCompleted();
 }
 
