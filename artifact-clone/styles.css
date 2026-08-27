@@ -158,16 +158,10 @@ button {
     var(--paper);
 }
 
-/* Dark mode background with full-screen Black Rose logo watermark */
+/* Dark mode background - Solid Black & Gold theme without image background logo watermarks */
 [data-theme="dark"] .app-shell {
-  background-color: #08090d;
-  background-image:
-    radial-gradient(circle at 50% 50%, rgba(13, 14, 20, 0.45), rgba(8, 9, 13, 0.88)),
-    url("./assets/darkmode.png");
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-size: cover;
-  background-attachment: fixed;
+  background-color: #07080a;
+  background-image: none !important;
 }
 
 [data-theme="dark"] .sidebar-content {
@@ -192,13 +186,13 @@ button {
   bottom: 0;
   display: flex;
   flex-direction: column;
-  background: #0f1117;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: #121c2d; /* Conforms seamlessly to light mode theme palette */
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 1000;
   flex-shrink: 0;
   overflow-y: auto;
   scrollbar-width: none;
-  transition: background 0.3s ease;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .sidebar-content {
@@ -213,8 +207,8 @@ button {
 }
 
 [data-theme="dark"] .sidebar {
-  background: #0a0b0f;
-  border-right-color: rgba(201, 149, 42, 0.1);
+  background: #090a0d; /* Solid black & gold dark mode sidebar */
+  border-right: 1px solid rgba(212, 175, 55, 0.16);
 }
 
 /* Sidebar logo area */
@@ -345,10 +339,32 @@ button {
 }
 
 .sidebar-nav-icon {
-  font-size: 1.1rem;
-  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 1.4rem;
-  text-align: center;
+  height: 1.4rem;
+  flex-shrink: 0;
+  color: #d4af37; /* Theme gold icon color */
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-nav-icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  stroke: currentColor;
+  fill: none;
+  display: block;
+}
+
+.sidebar-nav-item:hover .sidebar-nav-icon {
+  color: #f5d77f;
+  transform: scale(1.12);
+}
+
+.sidebar-nav-item.active .sidebar-nav-icon {
+  color: #f5d77f;
+  filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.6));
 }
 
 .sidebar-nav-label {
@@ -510,9 +526,7 @@ button {
 }
 
 [data-theme="dark"] .login-watermark {
-  mix-blend-mode: screen;
-  opacity: 0.45;
-  filter: drop-shadow(0 0 35px rgba(201, 149, 42, 0.25));
+  display: none !important;
 }
 
 .login-panel {
@@ -671,9 +685,7 @@ button {
 }
 
 [data-theme="dark"] .brand-watermark {
-  mix-blend-mode: screen;
-  opacity: 0.45;
-  filter: drop-shadow(0 0 35px rgba(201, 149, 42, 0.25));
+  display: none !important;
 }
 
 .app-shell::before {
@@ -3035,8 +3047,7 @@ dialog::before {
 }
 
 [data-theme="dark"] .auth-watermark {
-  opacity: 0.28;
-  filter: drop-shadow(0 0 25px rgba(201, 149, 42, 0.2));
+  display: none !important;
 }
 
 .auth-panel {
