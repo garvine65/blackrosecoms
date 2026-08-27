@@ -993,6 +993,18 @@ function render() {
   tasksHeading.style.display = isTask ? "" : "none";
   taskBoard.style.display = isTask ? "" : "none";
   newTaskButton.style.display = isTask ? "" : "none";
+
+  const exportButtonEl = document.querySelector("#exportButton");
+  if (exportButtonEl) {
+    exportButtonEl.hidden = !isTask;
+    exportButtonEl.style.display = isTask ? "" : "none";
+  }
+
+  const toolbarEl = document.querySelector(".toolbar");
+  if (toolbarEl) {
+    const showToolbar = isTask || isMeeting;
+    toolbarEl.style.display = showToolbar ? "" : "none";
+  }
   
   const passwordsHeading = document.querySelector("#passwordsHeading");
   const passwordsView = document.querySelector("#passwordsView");
