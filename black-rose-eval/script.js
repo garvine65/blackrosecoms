@@ -203,10 +203,15 @@ function ensureActiveDirector() {
   if (currentDirector) return currentDirector;
 
   try {
-    const activeProfileId = sessionStorage.getItem('blackrose-active-profile') || 
-                            localStorage.getItem('blackrose-active-profile') || '';
-    if (activeProfileId) {
-      const found = DIRECTORS.find(d => d.id === activeProfileId);
+    let pId = "";
+    if (typeof activeProfileId !== "undefined" && activeProfileId) {
+      pId = activeProfileId;
+    } else {
+      pId = sessionStorage.getItem('blackrose-active-profile') || 
+            localStorage.getItem('blackrose-active-profile') || '';
+    }
+    if (pId) {
+      const found = DIRECTORS.find(d => d.id === pId);
       if (found) {
         currentDirector = found;
         return found;
@@ -779,7 +784,12 @@ function initEvaluation() {
   buildDirectorGrid();
   const dir = ensureActiveDirector();
   if (dir) {
-    selectDirector(dir, true);
+    selectDirector(dir, false);
+  } else {
+    const gate = document.getElementById('gate');
+    if (gate) gate.style.display = 'block';
+    const formWrap = document.getElementById('formWrap');
+    if (formWrap) formWrap.classList.remove('active');
   }
 }
 

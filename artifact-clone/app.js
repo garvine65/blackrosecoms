@@ -1009,6 +1009,9 @@ function render() {
   if (evaluationsViewEl) {
     evaluationsViewEl.hidden = !isEvaluations;
     evaluationsViewEl.style.display = isEvaluations ? "" : "none";
+    if (isEvaluations && typeof initEvaluation === "function") {
+      initEvaluation();
+    }
   }
 
   const meetingsViewEl = document.querySelector("#meetingsView");
