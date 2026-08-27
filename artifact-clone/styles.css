@@ -102,15 +102,24 @@
   box-shadow: 0 4px 14px rgba(201, 149, 42, 0.25);
 }
 
-[data-theme="dark"] .theme-toggle {
-  border-color: rgba(201, 149, 42, 0.4);
-  background: rgba(201, 149, 42, 0.08);
-  box-shadow: 0 0 0 1px rgba(201, 149, 42, 0.15) inset;
+.header-icon-svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke: #d4af37;
+  fill: none;
+  display: block;
+  transition: stroke 0.25s ease, transform 0.25s ease;
 }
 
-[data-theme="dark"] .theme-toggle:hover {
-  background: rgba(201, 149, 42, 0.18);
-  box-shadow: 0 4px 14px rgba(201, 149, 42, 0.3);
+.theme-toggle:hover .header-icon-svg,
+.masthead-bell:hover .header-icon-svg {
+  stroke: #f5d77f;
+  transform: scale(1.1);
+}
+
+[data-theme="dark"] .header-icon-svg {
+  stroke: #f5d77f;
+  filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.4));
 }
 
 * {
