@@ -2352,6 +2352,8 @@ function renderDashboard() {
       ${nextTask ? `<div class="dash-next">Next: <strong>${escapeHtml(nextTask.title.slice(0, 50))}${nextTask.title.length > 50 ? "…" : ""}</strong> — ${formatDue(nextTask.due)}</div>` : `<div class="dash-next" style="color:var(--success);">\u2705 All clear</div>`}
     </div>`;
   }).join("");
+
+  renderLeaderboards();
 }
 
 // Click listener for client cards on Client Dashboard
@@ -2616,10 +2618,17 @@ function getRankReason(entry, isGoon) {
 }
 
 function renderRankCard(entry, position, isGoon, isTopShowoff) {
-  const medals = isGoon
-    ? ["😈", "😤", "🙈"]
-    : ["🌟", "💪", "😌"];
-  const medal = medals[Math.min(position, 2)];
+  const goonIcons = [
+    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`
+  ];
+  const showoffIcons = [
+    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+  ];
+  const medal = isGoon ? goonIcons[Math.min(position, 2)] : showoffIcons[Math.min(position, 2)];
   const photo = entry.profile.image
     ? `<img src="${entry.profile.image}" alt="${escapeHtml(entry.profile.name)}" class="rank-avatar" />`
     : `<span class="rank-avatar-placeholder">${escapeHtml(entry.profile.name[0])}</span>`;
@@ -2636,32 +2645,17 @@ function renderRankCard(entry, position, isGoon, isTopShowoff) {
   </div>`;
 }
 
-// ── Vibe Poll ────────────────────────────────────────────────
-function renderVibePoll() {
-  const votes = loadVibeVotes();
-  const myVote = activeProfileId ? votes[activeProfileId] : null;
-  const counts = { thriving: 0, grinding: 0, dead: 0 };
-  Object.values(votes).forEach(v => { if (counts[v] !== undefined) counts[v]++; });
-  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+function renderLeaderboards() {
+  const goonsEl = document.querySelector("#goonsList");
+  const showoffsEl = document.querySelector("#showoffsList");
+  if (!goonsEl || !showoffsEl) return;
 
-  // Mark selected
-  document.querySelectorAll(".vibe-btn").forEach(btn => {
-    btn.classList.toggle("selected", btn.dataset.vibe === myVote);
-  });
+  const ranked = computeRankings();
+  const goons = ranked.slice(0, 3);
+  const showoffs = ranked.slice(3).reverse();
 
-  const resultsEl = document.querySelector("#vibeResults");
-  if (total === 0) { resultsEl.hidden = true; return; }
-  resultsEl.hidden = false;
-
-  const vibeLabels = { thriving: "🔥 Thriving", grinding: "😤 Grinding", dead: "💀 Help" };
-  resultsEl.innerHTML = Object.entries(counts).map(([key, count]) => {
-    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-    return `<div class="vibe-bar-row">
-      <span class="vibe-bar-label">${vibeLabels[key]}</span>
-      <div class="vibe-bar-track"><div class="vibe-bar-fill" style="width:${pct}%"></div></div>
-      <span class="vibe-bar-count">${count}</span>
-    </div>`;
-  }).join("");
+  goonsEl.innerHTML = goons.map((e, i) => renderRankCard(e, i, true, false)).join("");
+  showoffsEl.innerHTML = showoffs.map((e, i) => renderRankCard(e, i, false, i === 0)).join("");
 }
 
 // ── Chat rendering ───────────────────────────────────────────
@@ -2874,26 +2868,6 @@ function showUnwindToast(text) {
 
 // ── Main renderUnwind ─────────────────────────────────────────
 function renderUnwind() {
-  // Quote of the day (deterministic by day-of-year)
-  const now = getCurrentTime();
-  const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000);
-  document.querySelector("#unwindQuote").innerHTML =
-    `<em>${UNWIND_QUOTES[dayOfYear % UNWIND_QUOTES.length]}</em>`;
-
-  // Rankings
-  const ranked = computeRankings();
-  const goons    = ranked.slice(0, 3);
-  const showoffs = ranked.slice(3).reverse(); // best performer first
-
-  document.querySelector("#goonsList").innerHTML =
-    goons.map((e, i) => renderRankCard(e, i, true, false)).join("");
-
-  document.querySelector("#showoffsList").innerHTML =
-    showoffs.map((e, i) => renderRankCard(e, i, false, i === 0)).join("");
-
-  // Vibe Poll
-  renderVibePoll();
-
   // Chat
   renderChatMessages();
   initStickerPicker();
