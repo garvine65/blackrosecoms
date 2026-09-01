@@ -1283,13 +1283,13 @@ main {
   font-family: "Courier New", monospace;
   font-size: 0.78rem;
   color: #536178;
-  background: rgba(255, 253, 249, 0.62);
+  background: transparent;
 }
 
 .mine-badge {
-  border-color: rgba(47, 123, 88, 0.45);
+  border-color: var(--green);
   color: var(--green);
-  background: rgba(230, 244, 236, 0.68);
+  background: transparent;
 }
 
 .assignee-name,
@@ -1786,38 +1786,38 @@ dialog::before {
 
 /* Priority badges */
 .badge.priority-urgent {
-  background: #fde8e8;
+  background: transparent;
   color: #b33a3a;
-  border: 1px solid #f5c0c0;
+  border: 1px solid #b33a3a;
   font-weight: 600;
 }
 .badge.priority-low {
-  background: #e6f4ec;
+  background: transparent;
   color: #2f7b58;
-  border: 1px solid #b3dfc8;
+  border: 1px solid #2f7b58;
 }
 
 /* KRA badge */
 .badge.kra-badge {
-  background: #fff0da;
+  background: transparent;
   color: #b77a17;
-  border: 1px solid #f0d09a;
+  border: 1px solid #b77a17;
   font-weight: 700;
   letter-spacing: 0.03em;
 }
 
 /* Checklist progress badge */
 .badge.checklist-badge {
-  background: #e8f0fe;
+  background: transparent;
   color: #1a56a8;
-  border: 1px solid #b3ccf5;
+  border: 1px solid #1a56a8;
 }
 
 /* Comment count badge */
 .badge.comment-badge {
-  background: #f3e8ff;
+  background: transparent;
   color: #6b21a8;
-  border: 1px solid #d8b4fe;
+  border: 1px solid #6b21a8;
 }
 
 /* Countdown badges */
@@ -1830,10 +1830,10 @@ dialog::before {
   margin-top: 0.2rem;
   letter-spacing: 0.02em;
 }
-.countdown-overdue { background: #fde8e8; color: #b33a3a; border: 1px solid #f5c0c0; }
-.countdown-today   { background: #fff0da; color: #b77a17; border: 1px solid #f0d09a; }
-.countdown-soon    { background: #fff8e1; color: #9a6800; border: 1px solid #ffe082; }
-.countdown-ok      { background: #e6f4ec; color: #2f7b58; border: 1px solid #b3dfc8; }
+.countdown-overdue { background: transparent; color: #b33a3a; border: 1px solid #b33a3a; }
+.countdown-today   { background: transparent; color: #b77a17; border: 1px solid #b77a17; }
+.countdown-soon    { background: transparent; color: #9a6800; border: 1px solid #9a6800; }
+.countdown-ok      { background: transparent; color: #2f7b58; border: 1px solid #2f7b58; }
 
 /* ── Comments Dialog ─────────────────────────────────────── */
 #commentsDialog {
@@ -1982,7 +1982,8 @@ dialog::before {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--red);
-  background: var(--red-soft);
+  background: transparent;
+  border: 1px solid var(--red);
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   align-self: flex-start;
@@ -2081,10 +2082,11 @@ dialog::before {
   align-items: baseline;
   line-height: 1.35;
 }
-.workload-task-item.wl-overdue { background: var(--red-soft); color: var(--red); }
+.workload-task-item.wl-overdue { background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 4px; }
 .wl-client {
-  background: var(--navy);
-  color: #fff;
+  background: transparent;
+  color: var(--navy);
+  border: 1px solid var(--navy);
   font-size: 0.65rem;
   padding: 0.1rem 0.35rem;
   border-radius: 3px;
@@ -3588,8 +3590,9 @@ select option,
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: var(--green-soft);
+  background: transparent;
   color: var(--green);
+  border: 1px solid var(--green);
   padding: 6px 10px;
   border-radius: 12px;
   font-weight: 700;
@@ -3624,9 +3627,9 @@ select option,
   font-weight: 600;
 }
 
-.cl-stat-chip.done { background: var(--green-soft); color: var(--green); }
-.cl-stat-chip.pending { background: var(--amber-soft); color: var(--amber); }
-.cl-stat-chip.hod { background: var(--primary-soft); color: var(--primary); }
+.cl-stat-chip.done { background: transparent; color: var(--green); border: 1px solid var(--green); }
+.cl-stat-chip.pending { background: transparent; color: var(--amber); border: 1px solid var(--amber); }
+.cl-stat-chip.hod { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
 
 .cl-card-footer {
   display: flex;

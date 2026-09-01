@@ -950,7 +950,7 @@ function visibleTasks() {
   if (searchQuery) {
     filtered = filtered.filter((task) => {
       const client = (task.client || "").toLowerCase();
-      const title = (task.task || "").toLowerCase();
+      const title = (task.title || "").toLowerCase();
       const details = (task.details || "").toLowerCase();
       const assignee = getProfile(task.assignedTo).name.toLowerCase();
       const assigner = getProfile(task.assignedBy).name.toLowerCase();
@@ -2426,7 +2426,10 @@ async function postComment() {
 
 // ── Feature 4: Client Dashboard ───────────────────────────────────────────────
 function renderDashboard() {
-  const clientList = clients.filter(c => c !== "All clients");
+  let clientList = clients.filter(c => c !== "All clients");
+  if (searchQuery) {
+    clientList = clientList.filter(c => c.toLowerCase().includes(searchQuery));
+  }
   const allOpen = tasks.filter(t => t.status === "open");
   const allOverdue = allOpen.filter(t => classifyTask(t) === "overdue");
   const allToday = allOpen.filter(t => classifyTask(t) === "today");
@@ -5151,6 +5154,12 @@ function renderChecklistList() {
   let filtered = monthlyChecklists;
   if (clFilterClient !== "all") filtered = filtered.filter(c => c.client === clFilterClient);
   if (clFilterMonth !== "all") filtered = filtered.filter(c => c.month === clFilterMonth);
+  if (searchQuery) {
+    filtered = filtered.filter(c =>
+      c.client.toLowerCase().includes(searchQuery) ||
+      clFormatMonth(c.month).toLowerCase().includes(searchQuery)
+    );
+  }
   filtered = filtered.slice().sort((a, b) => b.month.localeCompare(a.month) || a.client.localeCompare(b.client));
 
   if (!filtered.length) {
@@ -5681,9 +5690,39 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+// ── Top Search Bar Handler ────────────────────────────────────────
+function initMastheadSearch() {
+  const searchInput = document.querySelector("#mastheadSearch");
+  if (!searchInput) return;
+
+  searchInput.addEventListener("input", (e) => {
+    searchQuery = e.target.value.trim().toLowerCase();
+    render();
+  });
+
+  searchInput.addEventListener("search", (e) => {
+    searchQuery = e.target.value.trim().toLowerCase();
+    render();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+    } else if (e.key === "Escape" && document.activeElement === searchInput) {
+      searchInput.value = "";
+      searchQuery = "";
+      searchInput.blur();
+      render();
+    }
+  });
+}
+
 // ── Startup Data Fetching ─────────────────────────────────────────
 monthlyChecklists = loadChecklists();
 loadClientsFromDB();
+initMastheadSearch();
 
 // ── Expose active profile to evaluation script ────────────────────
 window.getActiveProfile = function () {
