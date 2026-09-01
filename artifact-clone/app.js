@@ -1893,10 +1893,12 @@ async function addNewClient(clientName) {
     return;
   }
 
+  // 1. Add to active client list & save locally
   clients.push(cleanName);
   clients.sort((a, b) => a === "All clients" ? -1 : b === "All clients" ? 1 : a.localeCompare(b));
   persistClientsLocally();
 
+  // 2. Save to Supabase clients table
   try {
     const { error } = await supabase.from("clients").insert([{ name: cleanName }]);
     if (error) console.warn("Supabase client insert error:", error);
@@ -1904,9 +1906,37 @@ async function addNewClient(clientName) {
     console.error("Supabase client insert exception:", e);
   }
 
+  // 3. Auto-generate current month's compliance checklist for this new client
+  const now = getCurrentTime();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  if (typeof clCreateFromTemplate === "function") {
+    const newChecklist = clCreateFromTemplate(cleanName, currentMonth);
+    if (newChecklist) {
+      monthlyChecklists.push(newChecklist);
+      persistChecklists();
+      if (typeof saveChecklistToDB === "function") {
+        saveChecklistToDB(newChecklist);
+      }
+    }
+  }
+
+  // 4. Auto-create starter credential placeholder for Passwords Manager
+  const newPwdRow = {
+    id: createId(),
+    category: "kra",
+    client: cleanName,
+    username: "",
+    password: "",
+    item: "",
+    link: ""
+  };
+  passwords.push(newPwdRow);
+  persistPasswords();
+  supabase.from("passwords").insert([newPwdRow]).catch(console.warn);
+
   populateTaskFormOptions();
   populateDatalist();
-  showToast(`Client "${cleanName}" registered successfully!`);
+  showToast(`Client "${cleanName}" registered & initialized successfully!`);
   render();
 }
 

@@ -2452,6 +2452,14 @@ dialog::before {
   gap: 0.85rem;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  background-image: linear-gradient(rgba(9, 10, 13, 0.86), rgba(9, 10, 13, 0.86)), url("./assets/group.jpeg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+[data-theme="light"] .chat-messages {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88)), url("./assets/group.jpeg");
 }
 .chat-msg {
   display: flex;
