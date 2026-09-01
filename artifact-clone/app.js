@@ -5611,43 +5611,45 @@ document.getElementById("clDeleteChecklistBtn").addEventListener("click", () => 
 });
 
 // ── Add Client Modal Event Handlers ──────────────────────────────
-const newClientModal = document.getElementById("newClientModal");
-const newClientBtn = document.getElementById("newClientBtn");
-const closeClientModalBtn = document.getElementById("closeClientModalBtn");
-const saveClientBtn = document.getElementById("saveClientBtn");
-const newClientNameInput = document.getElementById("newClientNameInput");
+document.addEventListener("click", async (e) => {
+  const openBtn = e.target.closest("#newClientBtn");
+  if (openBtn) {
+    const modal = document.getElementById("newClientModal");
+    const input = document.getElementById("newClientNameInput");
+    if (modal) {
+      if (input) input.value = "";
+      modal.hidden = false;
+      if (input) input.focus();
+    }
+    return;
+  }
 
-if (newClientBtn && newClientModal) {
-  newClientBtn.addEventListener("click", () => {
-    newClientNameInput.value = "";
-    newClientModal.hidden = false;
-    newClientNameInput.focus();
-  });
-}
+  const closeBtn = e.target.closest("#closeClientModalBtn");
+  if (closeBtn) {
+    const modal = document.getElementById("newClientModal");
+    if (modal) modal.hidden = true;
+    return;
+  }
 
-if (closeClientModalBtn && newClientModal) {
-  closeClientModalBtn.addEventListener("click", () => {
-    newClientModal.hidden = true;
-  });
-}
-
-if (saveClientBtn) {
-  saveClientBtn.addEventListener("click", async () => {
-    const val = newClientNameInput.value.trim();
+  const saveBtn = e.target.closest("#saveClientBtn");
+  if (saveBtn) {
+    const input = document.getElementById("newClientNameInput");
+    const val = input ? input.value.trim() : "";
     if (!val) {
       alert("Please enter a client company name.");
       return;
     }
     await addNewClient(val);
-    newClientModal.hidden = true;
-  });
-}
+    const modal = document.getElementById("newClientModal");
+    if (modal) modal.hidden = true;
+    return;
+  }
 
-if (newClientModal) {
-  newClientModal.addEventListener("click", e => {
-    if (e.target === newClientModal) newClientModal.hidden = true;
-  });
-}
+  const modal = document.getElementById("newClientModal");
+  if (modal && e.target === modal) {
+    modal.hidden = true;
+  }
+});
 
 // ── Startup Data Fetching ─────────────────────────────────────────
 monthlyChecklists = loadChecklists();
