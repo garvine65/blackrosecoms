@@ -832,7 +832,39 @@ taskBoard.addEventListener("click", (event) => {
 });
 
 document.querySelector("#notifyButton").addEventListener("click", async () => {
-  if ("Notification" in window) await Notification.requestPermission();
+  ringBellAnimation();
+  if (!("Notification" in window)) {
+    showToast("Desktop notifications are not supported in this browser.", "warning");
+    return;
+  }
+
+  // Play audio test chime whenever bell is clicked so user can test sound
+  playNotificationSound("chime");
+
+  if (Notification.permission === "granted") {
+    sendDesktopNotification(
+      "Notifications Active 🔔",
+      "You will hear sound chimes and receive desktop alerts for newly assigned tasks and due tasks."
+    );
+    showToast("Notifications active! Test sound played.", "success");
+    updateNotificationBellUI("granted");
+  } else if (Notification.permission === "default") {
+    const perm = await Notification.requestPermission();
+    if (perm === "granted") {
+      playNotificationSound("chime");
+      sendDesktopNotification(
+        "Notifications Enabled 🔔",
+        "You will hear sound chimes and receive desktop alerts for newly assigned tasks and due tasks."
+      );
+      showToast("Notification permission granted! Audio & desktop alerts active.", "success");
+    } else {
+      showToast("Notification permission denied. Enable in browser site settings.", "warning");
+    }
+    updateNotificationBellUI(perm);
+  } else {
+    showToast("Notifications are blocked. Click the site settings icon in your address bar to allow.", "warning");
+    updateNotificationBellUI("denied");
+  }
 });
 taskForm.addEventListener("submit", saveTask);
 profileForm.addEventListener("submit", saveProfile);
@@ -1173,6 +1205,8 @@ function activateProfile(profileId) {
   }
   document.getElementById("loginScreen").hidden = true;
   document.querySelector(".app-shell").classList.remove("locked");
+  updateNotificationBellUI();
+  checkTaskAlerts(true);
   render();
 }
 
@@ -1533,6 +1567,7 @@ async function executeSaveTask(id, existingTask, nextTask) {
   persistTasks();
   taskDialog.close();
   render();
+  checkTaskAlerts(false);
 
   const dbTask = {
     id: nextTask.id,
@@ -2003,11 +2038,280 @@ function saveSeenTaskIds(profileId, ids) {
   localStorage.setItem(`blackrose-seen-tasks-${profileId}`, JSON.stringify(ids));
 }
 
+// ── AUDIO & DESKTOP NOTIFICATIONS SYSTEM ─────────────────────────
+let _audioCtx = null;
+function getAudioContext() {
+  if (!_audioCtx) {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) _audioCtx = new AudioCtx();
+  }
+  if (_audioCtx && _audioCtx.state === "suspended") {
+    _audioCtx.resume().catch(() => {});
+  }
+  return _audioCtx;
+}
+
+["click", "keydown", "touchstart"].forEach((evtType) => {
+  window.addEventListener(evtType, () => { getAudioContext(); }, { passive: true });
+});
+
+function playNotificationSound(soundType = "chime") {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    if (soundType === "due") {
+      // 3-tone ascending warning chord for due tasks: C5 (523.25Hz) -> E5 (659.25Hz) -> G5 (783.99Hz)
+      const notes = [523.25, 659.25, 783.99];
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+
+        gain.gain.setValueAtTime(0, now + idx * 0.12);
+        gain.gain.linearRampToValueAtTime(0.28, now + idx * 0.12 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.45);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + idx * 0.12);
+        osc.stop(now + idx * 0.12 + 0.5);
+      });
+    } else {
+      // Dual-tone marimba chime for new assigned tasks & permission test: A5 (880Hz) -> E6 (1318.5Hz)
+      const notes = [880, 1318.5];
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, now + idx * 0.15);
+
+        gain.gain.setValueAtTime(0, now + idx * 0.15);
+        gain.gain.linearRampToValueAtTime(0.3, now + idx * 0.15 + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.15 + 0.5);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + idx * 0.15);
+        osc.stop(now + idx * 0.15 + 0.55);
+      });
+    }
+  } catch (err) {
+    console.warn("[BlackRose Audio] Notification sound error:", err);
+  }
+}
+
+function sendDesktopNotification(title, body, tag = null) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  try {
+    const options = {
+      body: body,
+      icon: "./logo.png",
+      tag: tag || undefined,
+      renotify: true
+    };
+    const n = new Notification(title, options);
+    n.onclick = () => {
+      window.focus();
+    };
+  } catch (err) {
+    console.warn("[BlackRose Notifications] Desktop alert error:", err);
+  }
+}
+
+function showToast(msg, type = "info") {
+  let toastEl = document.querySelector("#appToastContainer");
+  if (!toastEl) {
+    toastEl = document.createElement("div");
+    toastEl.id = "appToastContainer";
+    toastEl.style.cssText = `
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      pointer-events: none;
+    `;
+    document.body.appendChild(toastEl);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "app-toast-item";
+  toast.style.cssText = `
+    background: var(--bg-surface, #1e293b);
+    color: var(--text-main, #f8fafc);
+    border: 1px solid var(--border-surface, #334155);
+    border-left: 4px solid ${type === "warning" ? "#f59e0b" : type === "success" ? "#10b981" : "#3b82f6"};
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.875rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: auto;
+    max-width: 360px;
+  `;
+  toast.textContent = msg;
+  toastEl.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.style.opacity = "1";
+    toast.style.transform = "translateY(0)";
+  });
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(-10px)";
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+function updateNotificationBellUI(permState) {
+  const btn = document.querySelector("#notifyButton");
+  if (!btn) return;
+  const perm = permState || (("Notification" in window) ? Notification.permission : "unsupported");
+
+  if (perm === "granted") {
+    btn.title = "Notifications Enabled (Click to test sound & alert)";
+    btn.classList.add("notify-enabled");
+  } else if (perm === "denied") {
+    btn.title = "Notifications Blocked (Enable in browser address bar)";
+    btn.classList.remove("notify-enabled");
+  } else {
+    btn.title = "Click to enable notifications";
+    btn.classList.remove("notify-enabled");
+  }
+}
+
+function ringBellAnimation() {
+  const btn = document.querySelector("#notifyButton");
+  if (!btn) return;
+  btn.classList.remove("ring-bell");
+  void btn.offsetWidth;
+  btn.classList.add("ring-bell");
+  setTimeout(() => btn.classList.remove("ring-bell"), 850);
+}
+
+function getNotifiedAssignedTaskIds(profileId) {
+  try {
+    return JSON.parse(localStorage.getItem(`blackrose-notified-assigned-${profileId}`) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveNotifiedAssignedTaskIds(profileId, ids) {
+  localStorage.setItem(`blackrose-notified-assigned-${profileId}`, JSON.stringify(ids));
+}
+
+function getNotifiedDueTaskIds(profileId) {
+  try {
+    return JSON.parse(localStorage.getItem(`blackrose-notified-due-${profileId}`) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveNotifiedDueTaskIds(profileId, ids) {
+  localStorage.setItem(`blackrose-notified-due-${profileId}`, JSON.stringify(ids));
+}
+
+function checkTaskAlerts(isInitialLoad = false) {
+  if (!activeProfileId) return;
+
+  const notifiedAssigned = getNotifiedAssignedTaskIds(activeProfileId);
+  const notifiedDue = getNotifiedDueTaskIds(activeProfileId);
+
+  const now = new Date();
+
+  tasks.forEach((task) => {
+    if (task.status !== "open") return;
+    const isAssignedToMe = task.assignedTo === activeProfileId;
+
+    // 1. Newly Assigned Task alert check
+    if (isAssignedToMe && !notifiedAssigned.includes(task.id)) {
+      notifiedAssigned.push(task.id);
+
+      if (!isInitialLoad) {
+        ringBellAnimation();
+        playNotificationSound("chime");
+        const assigner = getProfile(task.assignedBy);
+        const assignerName = assigner ? assigner.name : "Someone";
+        sendDesktopNotification(
+          "📋 New Task Assigned",
+          `${assignerName} assigned you: "${task.title}"`,
+          `task-assigned-${task.id}`
+        );
+        showToast(`📋 New Task: "${task.title}" assigned to you`, "info");
+      }
+    }
+
+    // 2. Due Task alert check
+    if (isAssignedToMe && task.due && !notifiedDue.includes(task.id)) {
+      const taskDueDate = new Date(task.due);
+      if (!isNaN(taskDueDate.getTime()) && now >= taskDueDate) {
+        notifiedDue.push(task.id);
+
+        if (!isInitialLoad) {
+          ringBellAnimation();
+          playNotificationSound("due");
+          const formattedTime = task.due.replace("T", " at ");
+          sendDesktopNotification(
+            "⏰ Task Due!",
+            `Task "${task.title}" is due (${formattedTime})`,
+            `task-due-${task.id}`
+          );
+          showToast(`⏰ Task Due: "${task.title}" is due now!`, "warning");
+        }
+      }
+    }
+  });
+
+  saveNotifiedAssignedTaskIds(activeProfileId, notifiedAssigned);
+  saveNotifiedDueTaskIds(activeProfileId, notifiedDue);
+
+  updateBellBadgeCount();
+}
+
+function updateBellBadgeCount() {
+  const badgeEl = document.querySelector("#mastheadBadge");
+  if (!badgeEl || !activeProfileId) return;
+
+  const now = new Date();
+  const seenIds = getSeenTaskIds(activeProfileId);
+
+  const urgentTasks = tasks.filter((t) => {
+    if (t.status !== "open" || t.assignedTo !== activeProfileId) return false;
+    const isUnseen = t.assignedBy !== activeProfileId && !seenIds.includes(t.id);
+    const isDue = t.due && new Date(t.due) <= now;
+    return isUnseen || isDue;
+  });
+
+  if (urgentTasks.length > 0) {
+    badgeEl.textContent = urgentTasks.length > 99 ? "99+" : urgentTasks.length.toString();
+    badgeEl.hidden = false;
+  } else {
+    badgeEl.hidden = true;
+  }
+}
+
 function updateNotifications() {
   if (!activeProfileId) {
     document.querySelector("#notificationBanner").hidden = true;
+    updateBellBadgeCount();
     return;
   }
+
+  checkTaskAlerts(false);
 
   const seenIds = getSeenTaskIds(activeProfileId);
   const unseenTasks = tasks.filter(
@@ -2029,9 +2333,9 @@ function updateNotifications() {
   if (unseenTasks.length === 1) {
     const task = unseenTasks[0];
     const assigner = getProfile(task.assignedBy);
-    textEl.textContent = `${assigner.name} assigned you a new task: "${task.title}"`;
+    textEl.textContent = `${assigner ? assigner.name : "Someone"} assigned you a new task: "${task.title}"`;
   } else {
-    const assigners = [...new Set(unseenTasks.map((t) => getProfile(t.assignedBy).name))];
+    const assigners = [...new Set(unseenTasks.map((t) => (getProfile(t.assignedBy) || {}).name || "Someone"))];
     let assignerText = assigners.slice(0, -1).join(", ");
     if (assigners.length > 1) {
       assignerText += ` and ${assigners[assigners.length - 1]}`;
@@ -5719,10 +6023,40 @@ function initMastheadSearch() {
   });
 }
 
-// ── Startup Data Fetching ─────────────────────────────────────────
+// ── Startup Data Fetching & Task Notifications Initialization ─────
 monthlyChecklists = loadChecklists();
 loadClientsFromDB();
 initMastheadSearch();
+
+function initTasksRealtime() {
+  try {
+    supabase
+      .channel("tasks_realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tasks" },
+        async (payload) => {
+          console.log("[BlackRose DB] Realtime event on tasks:", payload);
+          await loadTasksFromDB();
+          render();
+          checkTaskAlerts(false);
+        }
+      )
+      .subscribe();
+  } catch (e) {
+    console.warn("[BlackRose DB] Tasks realtime subscription error:", e);
+  }
+}
+
+// Background checker for due tasks and new assignments every 15s
+setInterval(() => {
+  if (activeProfileId) {
+    checkTaskAlerts(false);
+  }
+}, 15000);
+
+initTasksRealtime();
+updateNotificationBellUI();
 
 // ── Expose active profile to evaluation script ────────────────────
 window.getActiveProfile = function () {

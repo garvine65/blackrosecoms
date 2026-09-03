@@ -814,6 +814,31 @@ button {
   border-color: var(--primary);
 }
 
+.masthead-bell.notify-enabled {
+  border-color: var(--accent, #d97706);
+  color: var(--accent, #d97706);
+  box-shadow: 0 0 8px rgba(217, 119, 6, 0.25);
+}
+
+.masthead-bell.notify-enabled .header-icon-svg {
+  stroke: var(--accent, #d97706);
+}
+
+@keyframes bellRing {
+  0% { transform: rotate(0); }
+  15% { transform: rotate(16deg); }
+  30% { transform: rotate(-16deg); }
+  45% { transform: rotate(12deg); }
+  60% { transform: rotate(-12deg); }
+  75% { transform: rotate(6deg); }
+  85% { transform: rotate(-6deg); }
+  100% { transform: rotate(0); }
+}
+
+.masthead-bell.ring-bell {
+  animation: bellRing 0.8s ease-in-out;
+}
+
 .masthead-bell-badge {
   position: absolute;
   top: 0.1rem;
