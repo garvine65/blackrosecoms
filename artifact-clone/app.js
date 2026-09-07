@@ -11,17 +11,42 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 //  CONSTANTS & DEFAULTS
 // ═══════════════════════════════════════════════════════════════════
 const clientStorageKey = "blackrose-client-list";
+const deletedClientStorageKey = "blackrose-deleted-clients";
 const defaultClients = ["All clients", "AMM Law", "BRC Consultancy", "Briq Consultancy", "Multiplier", "Ultimate", "ADH"];
+
+function getDeletedClients() {
+  try {
+    const saved = localStorage.getItem(deletedClientStorageKey);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
+function trackDeletedClient(clientName) {
+  try {
+    const deleted = getDeletedClients();
+    if (!deleted.some(c => c.toLowerCase() === clientName.toLowerCase())) {
+      deleted.push(clientName);
+      localStorage.setItem(deletedClientStorageKey, JSON.stringify(deleted));
+    }
+  } catch (e) {
+    console.error("Error tracking deleted client:", e);
+  }
+}
 
 function loadClientsLocally() {
   try {
     const saved = localStorage.getItem(clientStorageKey);
+    const deleted = getDeletedClients();
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return ["All clients", ...parsed.filter(c => c !== "All clients")];
+        const filtered = parsed.filter(c => c !== "All clients" && !deleted.some(d => d.toLowerCase() === c.toLowerCase()));
+        return ["All clients", ...filtered];
       }
     }
+    return [...defaultClients.filter(c => !deleted.some(d => d.toLowerCase() === c.toLowerCase()))];
   } catch (e) { console.error(e); }
   return [...defaultClients];
 }
@@ -1347,6 +1372,33 @@ function getTaskMonthLabel(task) {
 
 function renderBoard() {
   viewTitle.textContent = selectedClient;
+
+  // Render / update Delete Client button in tasksHeading
+  const headingContainer = document.querySelector("#tasksHeading");
+  if (headingContainer) {
+    let existingDelBtn = headingContainer.querySelector("#deleteCurrentClientBtn");
+    if (selectedClient !== "All clients") {
+      if (!existingDelBtn) {
+        existingDelBtn = document.createElement("button");
+        existingDelBtn.id = "deleteCurrentClientBtn";
+        existingDelBtn.className = "danger-button compact-button";
+        existingDelBtn.style.marginLeft = "auto";
+        existingDelBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          Delete Client
+        `;
+        existingDelBtn.addEventListener("click", () => deleteClient(selectedClient));
+        headingContainer.appendChild(existingDelBtn);
+      }
+      existingDelBtn.style.display = "inline-flex";
+    } else if (existingDelBtn) {
+      existingDelBtn.style.display = "none";
+    }
+  }
+
   const scoped = visibleTasks();
   const openCount = scoped.filter((task) => task.status === "open").length;
   openTaskCount.textContent = `${openCount} open ${openCount === 1 ? "task" : "tasks"}`;
@@ -1905,9 +1957,13 @@ function persistProfiles() {
 async function loadClientsFromDB() {
   try {
     const { data, error } = await supabase.from("clients").select("name");
+    const deleted = getDeletedClients();
     if (!error && data && data.length > 0) {
       const dbNames = data.map(c => c.name).filter(Boolean);
-      const combined = Array.from(new Set([...defaultClients.filter(c => c !== "All clients"), ...dbNames])).sort();
+      const localSaved = loadClientsLocally().filter(c => c !== "All clients");
+      const combined = Array.from(new Set([...localSaved, ...dbNames]))
+        .filter(c => !deleted.some(d => d.toLowerCase() === c.toLowerCase()))
+        .sort();
       clients.length = 0;
       clients.push("All clients", ...combined);
       persistClientsLocally();
@@ -1972,6 +2028,44 @@ async function addNewClient(clientName) {
   populateTaskFormOptions();
   populateDatalist();
   showToast(`Client "${cleanName}" registered & initialized successfully!`);
+  render();
+}
+
+async function deleteClient(clientName) {
+  if (!clientName || clientName === "All clients") {
+    showToast("Cannot delete 'All clients'");
+    return;
+  }
+
+  const confirmMsg = `Are you sure you want to delete client "${clientName}"?\n\nThis will remove the client from active lists and synchronize deletion with Supabase.`;
+  if (!confirm(confirmMsg)) return;
+
+  // 1. Record deletion locally and update active clients list
+  trackDeletedClient(clientName);
+  clients = clients.filter(c => c.toLowerCase() !== clientName.toLowerCase());
+  persistClientsLocally();
+
+  // 2. Delete from Supabase `clients` table
+  try {
+    const { error } = await supabase.from("clients").delete().eq("name", clientName);
+    if (error) {
+      console.warn("Supabase client delete error:", error);
+    } else {
+      console.log(`Supabase client "${clientName}" successfully deleted.`);
+    }
+  } catch (err) {
+    console.error("Supabase client delete exception:", err);
+  }
+
+  // 3. Reset selectedClient if currently set to deleted client
+  if (selectedClient.toLowerCase() === clientName.toLowerCase()) {
+    selectedClient = "All clients";
+  }
+
+  // 4. Refresh option lists and re-render app UI
+  populateTaskFormOptions();
+  populateDatalist();
+  showToast(`Client "${clientName}" deleted successfully.`);
   render();
 }
 
@@ -2753,7 +2847,17 @@ function renderDashboard() {
     const urgentCount = open.filter(t => t.priority === "urgent").length;
     const statusCls = overdue.length ? "dash-overdue" : dueToday.length ? "dash-today" : "dash-ok";
     return `<div class="dashboard-card ${statusCls}" data-client-name="${escapeHtml(client)}" style="cursor: pointer;">
-      <div class="dash-client-name">${escapeHtml(client)}</div>
+      <div class="dash-client-header">
+        <div class="dash-client-name">${escapeHtml(client)}</div>
+        <button class="delete-client-card-btn" data-client="${escapeHtml(client)}" title="Delete ${escapeHtml(client)}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        </button>
+      </div>
       <div class="dash-stats">
         <div class="dash-stat"><span class="dash-num ${overdue.length ? "stat-red" : ""}">${overdue.length}</span><span>Overdue</span></div>
         <div class="dash-stat"><span class="dash-num ${dueToday.length ? "stat-amber" : ""}">${dueToday.length}</span><span>Today</span></div>
@@ -2770,6 +2874,13 @@ function renderDashboard() {
 
 // Click listener for client cards on Client Dashboard
 document.querySelector("#dashboardGrid")?.addEventListener("click", (e) => {
+  const deleteBtn = e.target.closest(".delete-client-card-btn");
+  if (deleteBtn) {
+    e.stopPropagation();
+    const clientName = deleteBtn.dataset.client;
+    if (clientName) deleteClient(clientName);
+    return;
+  }
   const card = e.target.closest(".dashboard-card");
   if (card && card.dataset.clientName) {
     selectedClient = card.dataset.clientName;
@@ -5954,6 +6065,24 @@ document.getElementById("clDeleteChecklistBtn").addEventListener("click", () => 
 });
 
 // ── Add Client Modal Event Handlers ──────────────────────────────
+function renderModalClientList() {
+  const container = document.getElementById("existingClientsListModal");
+  if (!container) return;
+  const list = clients.filter(c => c !== "All clients");
+  if (list.length === 0) {
+    container.innerHTML = `<div style="font-size:0.85rem; color:var(--muted); font-style:italic; padding:0.4rem 0;">No registered clients</div>`;
+    return;
+  }
+  container.innerHTML = list.map(c => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:0.45rem 0.65rem; border-radius:6px; background:var(--bg-input); border:1px solid var(--border-input);">
+      <span style="font-weight:600; font-size:0.88rem; color:var(--ink);">${escapeHtml(c)}</span>
+      <button class="danger-button compact-button modal-delete-client-btn" data-client="${escapeHtml(c)}" type="button" style="padding:0.2rem 0.55rem; font-size:0.75rem;">
+        Delete
+      </button>
+    </div>
+  `).join("");
+}
+
 document.addEventListener("click", async (e) => {
   const openBtn = e.target.closest("#newClientBtn");
   if (openBtn) {
@@ -5961,6 +6090,7 @@ document.addEventListener("click", async (e) => {
     const input = document.getElementById("newClientNameInput");
     if (modal) {
       if (input) input.value = "";
+      renderModalClientList();
       modal.hidden = false;
       if (input) input.focus();
     }
@@ -5974,6 +6104,16 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
+  const modalDelBtn = e.target.closest(".modal-delete-client-btn");
+  if (modalDelBtn) {
+    const clientName = modalDelBtn.dataset.client;
+    if (clientName) {
+      await deleteClient(clientName);
+      renderModalClientList();
+    }
+    return;
+  }
+
   const saveBtn = e.target.closest("#saveClientBtn");
   if (saveBtn) {
     const input = document.getElementById("newClientNameInput");
@@ -5983,8 +6123,8 @@ document.addEventListener("click", async (e) => {
       return;
     }
     await addNewClient(val);
-    const modal = document.getElementById("newClientModal");
-    if (modal) modal.hidden = true;
+    renderModalClientList();
+    if (input) input.value = "";
     return;
   }
 
