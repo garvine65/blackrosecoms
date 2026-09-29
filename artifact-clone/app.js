@@ -252,7 +252,7 @@ async function onSignedIn() {
     .from("profiles")
     .select("*")
     .eq("email", _currentUser.email)
-    .single();
+    .maybeSingle();
 
   console.log('[BlackRose Auth] Profile lookup result:', { profile, error });
 
@@ -486,14 +486,26 @@ function setupAuthForm() {
         submitBtn.disabled = false;
         submitBtn.textContent = "Request Access";
       } else {
-        // Sign up successful
+        // Create an unapproved entry in public.profiles automatically
+        try {
+          const namePart = email.split("@")[0].replace(/[._]/g, " ");
+          const formattedName = namePart.replace(/\b\w/g, l => l.toUpperCase());
+          const profileId = email.split("@")[0].replace(/[._]/g, "-");
+          await supabase.from("profiles").upsert({
+            id: profileId,
+            name: formattedName,
+            details: "Black Rose team member",
+            email: email,
+            approved: false
+          }, { onConflict: "email" });
+        } catch (e) {
+          console.warn("Failed to create pending profile row:", e);
+        }
+
         if (!data.session) {
-          // Email confirmation required by Supabase settings
-          showAuthError("Account created! Please check your email for a confirmation link.");
+          showAuthError("Account created! Check email/spam folder for confirmation, or ask an admin to set approved=true in Supabase profiles.");
           submitBtn.disabled = false;
           submitBtn.textContent = "Request Access";
-        } else {
-          // Auto-logged in. onAuthStateChange will trigger onSignedIn().
         }
       }
     }
@@ -1035,6 +1047,7 @@ function getProfile(profileId) {
 
 function profileOptions(selectedId) {
   return profiles
+    .filter(profile => (profile.approved !== false && !profile.name.toLowerCase().includes("vacant")) || profile.id === selectedId)
     .map((profile) => `<option value="${profile.id}" ${profile.id === selectedId ? "selected" : ""}>${escapeHtml(profile.name)}</option>`)
     .join("");
 }
@@ -1605,7 +1618,8 @@ function openTaskDialog(task) {
   document.querySelector("#taskDetails").value = task?.details ?? "";
   document.querySelector("#taskAssignedBy").innerHTML = profileOptions(creatorId);
   document.querySelector("#taskAssignedTo").innerHTML = profileOptions(assigneeId);
-  document.querySelector("#taskDate").value = task?.due.slice(0, 10) ?? "2026-07-10";
+  const todayIso = getCurrentTime().toISOString().substring(0, 10);
+  document.querySelector("#taskDate").value = task?.due.slice(0, 10) ?? todayIso;
   document.querySelector("#taskTime").value = task?.due.slice(11) ?? "09:00";
   document.querySelector("#taskPriority").value = task?.priority ?? "normal";
   document.querySelector("#taskRepeat").value = task?.repeat ?? "";
